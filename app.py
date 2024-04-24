@@ -1,3 +1,7 @@
+
+#!/usr/bin/env python
+# coding: utf-8
+
 __version__ = "1.1.0"
 __date__ = '2024/04/10'
 __author__ = "Juan C Hernandez B"
@@ -121,6 +125,7 @@ txt_pregunta_cedula = "Cual es su numero de cedula"
 txt_pregunta_codigo = "Cual es el codigo de asociado"
 txt_si_disponibilidad = "Si, es correcto"
 txt_no_disponibilidad = "No, no es correcto"
+txt_despedidad = '<b>Gracias</b> por usar este servicio'
 datos_consulta = {
     "chat_id":0,
     "cedula":"",
@@ -153,11 +158,13 @@ def write_json(data, file_name='response.json'):
 # 
 # https://api.telegram.org/bot6897485406:AAE116uTF5894G5aN0wJZ8UmfHIwRLbAnFc/getMe
 # https://api.telegram.org/bot6897485406:AAE116uTF5894G5aN0wJZ8UmfHIwRLbAnFc/getUpdates
-# https://api.telegram.org/bot6897485406:AAE116uTF5894G5aN0wJZ8UmfHIwRLbAnFc/setWebhook?url=https://pruebaocr.cappoucla.org.ve
 # https://api.telegram.org/bot6897485406:AAE116uTF5894G5aN0wJZ8UmfHIwRLbAnFc/deleteWebhook
-# https://api.telegram.org/6379635079:AAHjOX9SuXHQrn-gmYQmkgBECAvG8lQ1COc/setWebhook?url=https://badly-exact-skink.ngrok-free.app
+# https://api.telegram.org/bot6897485406:AAE116uTF5894G5aN0wJZ8UmfHIwRLbAnFc/setWebhook?url=https://pruebaocr.cappoucla.org.ve
 # https://api.telegram.org/bot6897485406:AAE116uTF5894G5aN0wJZ8UmfHIwRLbAnFc/
 # https://pytba.readthedocs.io/en/latest/
+# https://api.telegram.org/bot6379635079:AAHjOX9SuXHQrn-gmYQmkgBECAvG8lQ1COc/deleteWebhook
+# https://api.telegram.org/bot6379635079:AAHjOX9SuXHQrn-gmYQmkgBECAvG8lQ1COc/setWebhook?url=https://badly-exact-skink.ngrok-free.app
+# https://api.telegram.org/bot6379635079:AAHjOX9SuXHQrn-gmYQmkgBECAvG8lQ1COc/setWebhook?url=https://pruebaspython.heros.com.ve
 # 
 
 def deleteWebhook():
@@ -168,6 +175,7 @@ def deleteWebhook():
     }
     r = requests.post(url, json=payload)
     bitacora('deleteWebhook api')
+    bitacora(r)
     return r
 
 def setWebhook(url):
@@ -178,9 +186,15 @@ def setWebhook(url):
     }
     r = requests.post(url) #, json=payload)
     print ('setWebhook',url)
-    bitacora('setWebhook api')
+    bitacora('setWebhook api '+url)
+    bitacora(r)
     return r
 
+# def eliminarw():
+#     deleteWebhook()
+
+# def asignarw():
+#     setWebhook(url):
 
 def sendChatAction(chat_id, tipo:'texto'):
     # switcher = {
@@ -270,13 +284,14 @@ def sendChatAction(chat_id, tipo:'texto'):
 def definir_comandos(BOT_COMMANDS):
     bitacora('entre definir_comandos')
     # BOT_COMMANDS= [{"command":"Iniciar", "description":"Iniciar el Bot"},{"command":"Disponibilidad","description":"Obtener mi Disponibilidad"}]
-    # url = f'https://api.telegram.org/bot{TELEGRAM_API_TOKEN}/setMyCommands'
+    url = f'https://api.telegram.org/bot{TELEGRAM_API_TOKEN}/setMyCommands'
     # payload = {
     #     'chat_id':chat_id,
     #     'action':mostrar
     # }
     # r = requests.post(url, json=payload)
     send_text = url + '?commands=' + str(json.dumps(BOT_COMMANDS) ) 
+    bitacora(send_text)
     r  = requests.get(send_text)
     bitacora('sali definir_comandos')
     return r
@@ -294,9 +309,10 @@ def informarpago(msg):
 def cerrarsesion(msg):
     chat_id=obtener_chat_id(msg)
     sendChatAction(chat_id,'texto')
-    iniciar()
+    bot.send_message(chat_id, txt_despedida,parse_mode='html')
+    # iniciar(msg)
 
-def botones_session(msg):
+def botones_session(msg, nombre):
     if (datos_consulta['cedula'] == '' or datos_consulta['codigo']==''):
         bot.send_message(chat_id, 'Lo siento... \nAlgo malo ha ocurrido con los datos para obtener sesion, <b>revise sus datos e intente nuevamente</b>',parse_mode='html')
         # iniciar()
@@ -334,7 +350,7 @@ def botones_session(msg):
     botones.row(txt_haberes, txt_prestamos)
     botones.row(txt_pagos)
     botones.row(txt_salir)
-    msg = bot.send_message(chat_id, 'Opciones disponibles ', reply_markup=botones)
+    msg = bot.send_message(chat_id, 'Bienvenido(a): <b>'+nombre+'</b>\nOpciones disponibles ', reply_markup=botones, parse_mode='html')
     definir_comandos(BOT_COMMANDS)
 
 
@@ -351,7 +367,8 @@ def botones_inicio(msg):
     # # markup.add(txt_Disponibilidad, txt_haberes, txt_prestamos, txt_pagos, txt_salir)
     # botones.row(txt_inicio, txt_identificar, txt_ayuda)
     # msg = bot.send_message(chat_id, 'Opciones disponibles ', reply_markup=botones)
-    definir_comandos(BOT_COMMANDS_SESION)
+    # definir_comandos(BOT_COMMANDS_SESION)
+    definir_comandos(BOT_COMMANDS)
 
 def menu_anterior(msg):
     botones_inicio(BOT_COMMANDS)
@@ -384,9 +401,18 @@ def iniciar(msg):
     bot.send_message(chat_id, cuento, parse_mode="html", reply_markup=markup)
     botones_inicio(msg)
 
-    # sendChatAction(chat_id,'foto')
-    # foto = open('./images/ejemplo.jpeg', 'rb')
-    # bot.send_photo(chat_id, foto, 'Ejemplo para obtener su disponibilidad')
+    sendChatAction(chat_id,'foto')
+    foto = open('./images/01.jpeg', 'rb')
+    bot.send_photo(chat_id, foto, 'Ejemplo para obtener su disponibilidad')
+    sendChatAction(chat_id,'foto')
+    foto = open('./images/02.jpeg', 'rb')
+    bot.send_photo(chat_id, foto)
+    sendChatAction(chat_id,'foto')
+    foto = open('./images/03.jpeg', 'rb')
+    bot.send_photo(chat_id, foto)
+    sendChatAction(chat_id,'foto')
+    foto = open('./images/04.jpeg', 'rb')
+    bot.send_photo(chat_id, foto)
     bitacora('funcion iniciar ')
 
 
@@ -424,7 +450,7 @@ def confirmar_datos(message):
                 print('respues en confirmar_datos ',respuesta, resultado)
                 if respuesta == 'Ok':
                     eliminar_msg(chat_id, mid)
-                    botones_session(message)
+                    botones_session(message, resultado['datos']['ape_prof'].strip() + ' ' + resultado['datos']['nombr_prof'].strip())
                 else:
                     markup = ReplyKeyboardRemove()
                     bot.send_message(chat_id, 
@@ -451,7 +477,7 @@ def confirmar_datos(message):
 
 def preguntar_codigo(message):
     bitacora('entre preguntar_codigo ')
-    print(message)
+    # print(message)
     chat_id = obtener_chat_id(message)
     texto = obtener_chat_text(message)
     # print('estoy en preguntar_codigo')
@@ -915,7 +941,7 @@ def procesar_respuesta(msg):
 
 def recibir_msg(app):
     bitacora('entre recibir_msg')
-    print(threading.current_thread().getName())
+    # print(threading.current_thread().getName())
         # if SERVER_LOCAL==True:
         #     conf.get_default().config_path = './config_ngrok.yml'
         #     # conf.get_default.region='us'
@@ -934,11 +960,17 @@ def recibir_msg(app):
 
         # if SERVER_LOCAL==False:
         # try:
-    if not SERVER_LOCAL:
-        print('desactivando Webhook')
-        deleteWebhook()
-        time.sleep(1)
-        print('asignando Webhook', setWebhook(servidor))
+    # if not SERVER_LOCAL:
+    print('desactivando Webhook')
+    res = deleteWebhook()
+    print(res)
+    # if res['ok']:
+    time.sleep(1)
+    res = setWebhook(servidor)
+    # if res['ok']:
+    id = os.getenv('MI_ID_MOVISTAR', 'No definido SERVER_LOCAL')
+    bot.send_message(id,'asignado Webhook '+servidor)
+
         #     return True
         # except Exception as error:
         #     print('fallo inicio configuracion bot ',error)
@@ -977,14 +1009,30 @@ def evaluar_comandos(msg, txt):
             return True, txt3
     return False, txt
 
+def print_properties(value, parent):
+    if type(value) is dict:
+        for (key, val) in value.items():
+            if type(val) is dict:
+                print_properties(val, parent + '.' + key)
+            else:
+                print("{}: {}".format(parent + '.' + key, val))
+                bitacora("{}: {}".format(parent + '.' + key, val))
+    else:
+        bitacora("{}: {}".format(parent, value))
+
 
 @app.route("/", methods=['GET','POST'])
 def index():
     bitacora('entre index')
     try:
         if (request.method == 'POST'):
-            msg  = request.get_json()
-            # print(msg)
+            msg  = request.get_json(force=True,silent=True)
+            # for (key, val) in msg.items():
+            #     print_properties(val, key)
+
+            # silent=True
+            # params = json.dumps(msg).encode('utf8')
+            # bitacora(msg)
             write_json(msg, 'telegram_request.json')
 
             if "message" in msg and "text" in msg["message"]:
@@ -997,7 +1045,7 @@ def index():
             print('regreso '+txt, es_commando, es_respuesta, es_mensaje)
             # if txt in BOT_COMMANDS:
             # if txt == 'algo':
-            bitacora(msg)
+            # bitacora(msg)
             # logger(msg)
             if es_commando == True: #(existe_comando(txt)):
                 if (txt == 'start'):
@@ -1026,6 +1074,7 @@ def index():
         else:
             return "flask/bot instalado/running 5"
     except Exception as error:
+        # bot.send_message(os.getenv('MI_ID_MOVISTAR', 'No definido SERVER_LOCAL'), 'reiniciar bot'+error, parse_mode='html')
         print('error en index',error)
         return "flask/bot instalado/running 5/"
         # send_message(chat_id, 'Escribiste algo que no he entendido que quieres decir con <b><u>'+txt+'</u></b>\n Puedes utilizar <b>/</b> para ver los comandos o para obtener <b>/ayuda</b> ')
@@ -1058,6 +1107,11 @@ def procesar_imagen(msg):
         # ocr_res = pytesseract.image_to_string(imagen, lang='spa')
         ocr_res = pytesseract.image_to_string(imagen)
         print(ocr_res)
+        bot.send_message(obtener_chat_id(msg), 'lo que pude extraer de la imagen recibida')
+        if (len(ocr_res.strip()) > 0):
+            bot.send_message(obtener_chat_id(msg), ocr_res)
+        else:
+            bot.send_message(obtener_chat_id(msg), 'no pude obtener informacion de la imagen recibida')
     except Exception as error:
         print('no pude procesar_imagen',chat_id,error)
     bitacora('sali procesar_imagen')
@@ -1141,14 +1195,16 @@ if __name__ == '__main__':
     #                             target=contar)    
     #     hilo.start()    
     print('Iniciando Bot')
-    hilo = threading.Thread(name='Thread_bot',target=recibir_msg(app))
-    print(hilo)
-    hilo.start()
+    # hilo = threading.Thread(name='Thread_bot',target=recibir_msg(app))
+    # print(hilo)
+    # hilo.start()
     # if (not SERVER_LOCAL):
     # print('definir_comandos ',definir_comandos())
-    print('Bot iniciado')
-    if not SERVER_LOCAL:
-        bitacora('iniciando bot, mensaje a '+TELEGRAM_API_TOKEN)
-        bot.send_message(os.getenv('MI_ID_MOVISTAR', 'No definido SERVER_LOCAL'),'Reiniciado el bot '+servidor)
+    # print('Bot iniciado')
+    # if not SERVER_LOCAL:
     # # serve(servidor, host='0.0.0.0')
+    bitacora('iniciando bot, mensaje a '+TELEGRAM_API_TOKEN)
+    recibir_msg(app)
+    id = os.getenv('MI_ID_MOVISTAR', 'No definido SERVER_LOCAL')
+    bot.send_message(id,'Reiniciado el bot '+servidor)
     app.run(debug=True, host='0.0.0.0',port=PORT)

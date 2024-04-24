@@ -6,6 +6,6 @@ lib64/
 share/
 .env
 .enva
-stderr.log
+*.log
 telegram_request.json
 sftp-config.json

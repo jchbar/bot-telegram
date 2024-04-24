@@ -32,7 +32,7 @@ pip install pytesseract
 # #  /usr /bin /env python3
 # from config import *
 from flask import Flask, jsonify, make_response, request, Response
-# from pyngrok import ngrok, conf
+from pyngrok import ngrok, conf
 # from telegramapi import TelegramApi
 import telebot 
 import time
@@ -71,20 +71,22 @@ def bitacora(message, file_name='registro.log'):
     file.close()
 
 load_dotenv()
+URL_API         = os.getenv('URL_API', 'No definido URL_API')
+SITIOWEB        = os.getenv('SITIOWEB', 'No definido SITIOWEB')
 SERVER_LOCAL    = os.getenv('SERVER_LOCAL', 'No definido SERVER_LOCAL')
 SERVER_LOCAL    = True if SERVER_LOCAL=='1' else False
 if (SERVER_LOCAL == True):
-    TELEGRAM_API_TOKEN  = os.getenv('TELEGRAM_API_TOKEN_TEST', 'No definido SERVER_LOCAL')
+    TELEGRAM_API_TOKEN  = os.getenv('TELEGRAM_API_TOKEN_TEST', 'No definido TOKEN SERVER_LOCAL')
     url                 = os.getenv('SERVER_NGROK', 'No definido SERVER_LOCAL')
     servidor            = os.getenv('SERVER_NGROK', 'No definido SERVER_LOCAL')
     PORT                = os.getenv('PORT_TEST', 'No definido SERVER_LOCAL')
     print('Seleccionado SERVER_LOCAL')
     bitacora('Seleccionado SERVER_LOCAL '+url + servidor + str(PORT))
 else:
-    TELEGRAM_API_TOKEN  = os.getenv('TELEGRAM_API_TOKEN_REAL', 'No definido SERVER_LOCAL')
-    url                 = os.getenv('SERVER_REAL', 'No definido SERVER_LOCAL')
-    servidor            = os.getenv('SERVER_REAL', 'No definido SERVER_LOCAL')
-    PORT                = os.getenv('PORT_REAL', 'No definido SERVER_LOCAL')
+    TELEGRAM_API_TOKEN  = os.getenv('TELEGRAM_API_TOKEN_REAL', 'No definido TOKEN SERVER_REAL')
+    url                 = os.getenv('SERVER_REAL', 'No definido URL SERVER_REAL')
+    servidor            = os.getenv('SERVER_REAL', 'No definido SERVER_REAL 2')
+    PORT                = os.getenv('PORT_REAL', 'No definido SERVER_REAL 3')
     print('Seleccionado SERVER_REAL')
     bitacora('Seleccionado SERVER_REAL '+url + servidor + str(PORT)) 
 
@@ -132,6 +134,16 @@ arreglo_botones = []
 # logging.basicConfig(filename="logger.log",  level=logging.DEBUG)
 # # encoding="utf-8",
 
+def inicializar():
+    arreglo_botones = []
+    datos_consulta = {
+        "chat_id":0,
+        "cedula":"",
+        "codigo":"",
+        "id_msg_cedula":0,
+        "id_msg_codigo":0
+    }
+
 def write_json(data, file_name='response.json'):
     with open(file_name, 'a') as f:
         json.dump(data, f, indent=4)
@@ -141,11 +153,13 @@ def write_json(data, file_name='response.json'):
 # 
 # https://api.telegram.org/bot6897485406:AAE116uTF5894G5aN0wJZ8UmfHIwRLbAnFc/getMe
 # https://api.telegram.org/bot6897485406:AAE116uTF5894G5aN0wJZ8UmfHIwRLbAnFc/getUpdates
-# https://api.telegram.org/bot6897485406:AAE116uTF5894G5aN0wJZ8UmfHIwRLbAnFc/setWebhook?url=https://pruebaocr.cappoucla.org.ve
 # https://api.telegram.org/bot6897485406:AAE116uTF5894G5aN0wJZ8UmfHIwRLbAnFc/deleteWebhook
-# https://api.telegram.org/6379635079:AAHjOX9SuXHQrn-gmYQmkgBECAvG8lQ1COc/setWebhook?url=https://badly-exact-skink.ngrok-free.app
+# https://api.telegram.org/bot6897485406:AAE116uTF5894G5aN0wJZ8UmfHIwRLbAnFc/setWebhook?url=https://pruebaocr.cappoucla.org.ve
 # https://api.telegram.org/bot6897485406:AAE116uTF5894G5aN0wJZ8UmfHIwRLbAnFc/
 # https://pytba.readthedocs.io/en/latest/
+# https://api.telegram.org/bot6379635079:AAHjOX9SuXHQrn-gmYQmkgBECAvG8lQ1COc/deleteWebhook
+# https://api.telegram.org/bot6379635079:AAHjOX9SuXHQrn-gmYQmkgBECAvG8lQ1COc/setWebhook?url=https://badly-exact-skink.ngrok-free.app
+# https://api.telegram.org/bot6379635079:AAHjOX9SuXHQrn-gmYQmkgBECAvG8lQ1COc/setWebhook?url=https://pruebaspython.heros.com.ve
 # 
 
 def deleteWebhook():
@@ -219,7 +233,7 @@ def sendChatAction(chat_id, tipo:'texto'):
         'action':mostrar
     }
     r = requests.post(url, json=payload)
-    bitacora('sendChatAction '+mostrar)
+    # bitacora('sendChatAction '+mostrar)
     return r
 
 
@@ -258,16 +272,33 @@ def sendChatAction(chat_id, tipo:'texto'):
 def definir_comandos(BOT_COMMANDS):
     bitacora('entre definir_comandos')
     # BOT_COMMANDS= [{"command":"Iniciar", "description":"Iniciar el Bot"},{"command":"Disponibilidad","description":"Obtener mi Disponibilidad"}]
-    # url = f'https://api.telegram.org/bot{TELEGRAM_API_TOKEN}/setMyCommands'
+    url = f'https://api.telegram.org/bot{TELEGRAM_API_TOKEN}/setMyCommands'
     # payload = {
     #     'chat_id':chat_id,
     #     'action':mostrar
     # }
     # r = requests.post(url, json=payload)
     send_text = url + '?commands=' + str(json.dumps(BOT_COMMANDS) ) 
+    bitacora(send_text)
     r  = requests.get(send_text)
     bitacora('sali definir_comandos')
     return r
+
+def saldoprestamos(msg):
+    chat_id=obtener_chat_id(msg)
+    sendChatAction(chat_id,'texto')
+    bot.send_message(chat_id, 'Lo siento... \npendiente de desarrollo saldo de prestamos',parse_mode='html')
+
+def informarpago(msg):
+    chat_id=obtener_chat_id(msg)
+    sendChatAction(chat_id,'texto')
+    bot.send_message(chat_id, 'Lo siento... \npendiente de desarrollo informar pago',parse_mode='html')
+
+def cerrarsesion(msg):
+    chat_id=obtener_chat_id(msg)
+    sendChatAction(chat_id,'texto')
+    bot.send_message(chat_id, '<b>Gracias</b> por usar este servicio',parse_mode='html')
+    iniciar(msg)
 
 def botones_session(msg):
     if (datos_consulta['cedula'] == '' or datos_consulta['codigo']==''):
@@ -324,12 +355,14 @@ def botones_inicio(msg):
     # # markup.add(txt_Disponibilidad, txt_haberes, txt_prestamos, txt_pagos, txt_salir)
     # botones.row(txt_inicio, txt_identificar, txt_ayuda)
     # msg = bot.send_message(chat_id, 'Opciones disponibles ', reply_markup=botones)
-    definir_comandos(BOT_COMMANDS_SESION)
+    # definir_comandos(BOT_COMMANDS_SESION)
+    definir_comandos(BOT_COMMANDS)
 
 def menu_anterior(msg):
     botones_inicio(BOT_COMMANDS)
 
 def ayuda(msg):
+    inicializar()
     chat_id=obtener_chat_id(msg)
     print('estoy en ayuda')
     sendChatAction(chat_id,'texto')
@@ -346,6 +379,7 @@ def ayuda(msg):
 
 def iniciar(msg):
     # print('estoy en iniciar')
+    inicializar()
     chat_id=obtener_chat_id(msg)
     sendChatAction(chat_id,'texto')
     markup = ReplyKeyboardRemove()
@@ -391,14 +425,20 @@ def confirmar_datos(message):
                 eliminar_msg(chat_id, id_msg_cod)
             else:
                 codigo = texto
-                if consultardatos(message, chat_id, 0):
+                respuesta, resultado, mid = consultardatos(message, chat_id, 0)
+                print('respues en confirmar_datos ',respuesta, resultado)
+                if respuesta == 'Ok':
+                    eliminar_msg(chat_id, mid)
                     botones_session(message)
                 else:
                     markup = ReplyKeyboardRemove()
                     bot.send_message(chat_id, 
-                        'Tuvimos inconveniente para iniciar sesion',
+                        'Lo sentimos, tuvimos inconveniente para iniciar sesion',
                         parse_mode='html',
                         reply_markup=markup)
+                    identificarme(message)
+                    if (mid != 0):
+                        eliminar_msg(chat_id, mid)
                 # responder_disponibilidad(chat_id)
                 # botones_session(message)
                 # markup = ReplyKeyboardMarkup(
@@ -437,25 +477,27 @@ def consultardatos(msg, cid, mid):
     bitacora('entre consultardatos')
     try:
         # cid=obtener_chat_id(msg)
-        # mid = barra_progreso(0,'Estableciendo conexion a datos',cid)
+        mid = barra_progreso(0,'Estableciendo conexion a datos',cid)
         # print('mid responder_disponibilidad',mid)
         cedula = datos_consulta['cedula']
         codigo = datos_consulta['codigo']
         respuesta = solicitar_informacion(cedula, codigo, cid, mid, 'obtenerdatosB')
         write_json(respuesta, 'telegram_request.json')
-        return respuesta['respuesta'], respuesta
+        return respuesta['respuesta'], respuesta, mid
     except Exception as error:
         print('error en consultardatos',error)
     bitacora('sali consultardatos  ')
-    return 'NoOk', []
+    return 'NoOk', [], 0
 
 
 def saldohaberes(msg):
     cid=obtener_chat_id(msg)
-    bitacora('entre disponibilidad ')
+    bitacora('entre saldohaberes ')
     sendChatAction(cid,'texto')
-    mid = barra_progreso(0,'Estableciendo conexion a datos',cid)
-    respuesta, resultado = consultardatos(msg, cid, mid)
+    # mid = barra_progreso(0,'Estableciendo conexion a datos',cid)
+    respuesta, resultado, mid = consultardatos(msg, cid, 0)
+    # print('respues en saldohaberes ',respuesta, resultado)
+
     if respuesta =='Ok':
         respuesta=resultado
         sendChatAction(cid,'texto')
@@ -467,10 +509,20 @@ def saldohaberes(msg):
         barra_progreso(100,'Preparando la entrega de informacion',cid, mid)
         socio = respuesta['datos']
         # cuento = "Estimado(a) Socio(a):<b><span class='tg-spoiler'>"+socio['nombre']+'</span><b>\n'
+        asocio      = float(socio['hab_f_prof'])
+        apatronal   = float(socio['hab_f_empr'])
+        reserva     = float(respuesta['reserva'])
+        asocio      = "{:,.3f}".format(asocio)
+        apatronal   = "{:,.3f}".format(apatronal)
+        reserva     = "{:,.3f}".format(reserva)
         cuento = "Estimado(a) Socio(a):<b>"+socio['nombre']+'</b>\n'
-        cuento += 'Datos actualizados el '+respuesta['actualizacion']['fechaactdatos']+'\n'
-        cuento += 'Ahorros Socio al '+socio['uas']+': <b>'+str(socio['hab_f_prof'])+'</b>\n'
-        cuento += 'Aporte Patronal al '+socio['uap']+': <b>'+str(socio['hab_f_empr'])+'</b>\n'
+        cuento += 'Datos actualizados el <b>'+respuesta['actualizacion']['fechaactdatos']+'</b>\n'
+        cuento += 'Ahorros Socio al '+socio['uas']+': <b>'+asocio+'</b>\n'
+        cuento += 'Aporte Patronal al '+socio['uap']+': <b>'+apatronal+'</b>\n'
+        cuento += '<u>Menos</u> Reserva Legal <b>'+reserva+'</b>\n'
+
+        # cuento += 'Ahorros Socio al '+socio['uas']+': <b>'+str(socio['hab_f_prof'])+'</b>\n'
+        # cuento += 'Aporte Patronal al '+socio['uap']+': <b>'+str(socio['hab_f_empr'])+'</b>\n'
         # cuento += 'Ahorros Socio al '+socio['uas']+': <b>'+socio['hab_f_prof']+'</b>\n'
         cuento += '\nPara mayor informacion puede consultar el Estado de Cuenta en '
         cuento += '<a href="https://estadodecuenta.cappoucla.org.ve">Estado de Cuenta</a>\n'
@@ -618,7 +670,7 @@ def cursor_arriba(n=1):
     print(f'\33[{n}A',end='')
 
 def barra_progreso(porcentaje, texto="", cid=None, mid=None, terminal=False):
-    bitacora('entre barra_progreso  '+str(porcentaje))
+    # bitacora('entre barra_progreso  '+str(porcentaje))
     try:
         t, no, si = ('|','-','#')
         if terminal:
@@ -656,13 +708,14 @@ def barra_progreso(porcentaje, texto="", cid=None, mid=None, terminal=False):
                     eliminar_msg(cid, mid)
                     return
     except Exception as error:
+        bitacora('error en barra_progreso')
         print('error en barra_progreso',error)
-    bitacora('sali barra_progreso  ')
+    # bitacora('sali barra_progreso  ')
 
 def numAzar(inicio=0, fin=100):
-    bitacora('entre numAzar  ')
+    # bitacora('entre numAzar  ')
     azar = random.randint(inicio,fin)
-    bitacora('entre numAzar  '+str(azar))
+    # bitacora('entre numAzar  '+str(azar))
     return azar
 
 
@@ -714,6 +767,7 @@ def responder_disponibilidad(cid):
         codigo = datos_consulta['codigo']
         respuesta = solicitar_informacion(cedula, codigo, cid, mid, 'obtenerdatosB')
         write_json(respuesta, 'telegram_request.json')
+        print(respuesta)
         # write_json(respuesta, 'telegram_request.json')
         if respuesta['respuesta'] =='Ok':
             sendChatAction(cid,'texto')
@@ -724,11 +778,17 @@ def responder_disponibilidad(cid):
             time.sleep(0.5)
             barra_progreso(100,'Preparando entrega de informacion',cid, mid)
             socio = respuesta['datos']
+            disponibilidad     = float(respuesta['disponibilidad'])
+            disponibilidad     = "{:,.3f}".format(disponibilidad)
+
+
             # cuento = "Estimado(a) Socio(a):<b><span class='tg-spoiler'>"+socio['nombre']+'</span><b>\n'
-            cuento = "Estimado(a) Socio(a):<b>"+socio['nombre']+'</b>\n'
-            cuento += 'Su disponibilidad es de <b>'+str(respuesta['disponibilidad'])+'</b>\n'
-            if (respuesta['tsuspension'] > 0):
-                cuento += 'Tiene un saldo pendiente de '+str(respuesta['tsuspension'])+'\n'
+            cuento = "Estimado(a) Socio(a): <b>"+socio['nombre']+'</b>\n'
+            cuento += 'Su disponibilidad es de <b>'+disponibilidad+'</b>\n'
+            if (float(respuesta['tsuspension']) > 0):
+                tsuspension     = float(respuesta['tsuspension'])
+                tsuspension     = "{:,.3f}".format(tsuspension)
+                cuento += 'Tiene un saldo pendiente de '+tsuspension+'\n'
             cuento += 'Datos actualizados el '+respuesta['actualizacion']['fechaactdatos']+'\n'
             cuento += '\nPara mayor informacion puede consultar el Estado de Cuenta en '
             cuento += '<a href="https://estadodecuenta.cappoucla.org.ve">Estado de Cuenta</a>\n'
@@ -766,10 +826,13 @@ def identificarme(msg):
     chat_id=obtener_chat_id(msg)
     bitacora('entre identificarme ')
     sendChatAction(chat_id,'texto')
-    # botones = ReplyKeyboardRemove()
+    botones = ReplyKeyboardRemove()
     # respuesta = bot.send_message(chat_id, '',reply_markup=botones)
     markup = ForceReply()
-    respuesta = bot.send_message(chat_id, txt_pregunta_cedula,reply_markup = markup, parse_mode='html')
+    respuesta = bot.send_message(
+        chat_id, 
+        txt_pregunta_cedula,reply_markup = markup, 
+        parse_mode='html')
     # print(respuesta)
     bot.register_next_step_handler(respuesta, preguntar_codigo)
     bitacora('sali identificarme ')
@@ -797,7 +860,10 @@ def continuar_identificacion(msg):
                 texto = texto.zfill(5)
                 datos_consulta['codigo']=texto
                 datos_consulta['id_msg_codigo']=obtener_msg_id(msg)
-                if consultardatos(msg, chat_id, 0):
+                respuesta, resultado, mid = consultardatos(msg, chat_id, 0)
+                print('respues en continuar_identificacion ',respuesta, mid)
+                if respuesta == 'Ok':
+                    eliminar_msg(chat_id, mid)
                     botones_session(msg)
                 else:
                     markup = ReplyKeyboardRemove()
@@ -854,7 +920,7 @@ def procesar_respuesta(msg):
 
 def recibir_msg(app):
     bitacora('entre recibir_msg')
-    print(threading.current_thread().getName())
+    # print(threading.current_thread().getName())
         # if SERVER_LOCAL==True:
         #     conf.get_default().config_path = './config_ngrok.yml'
         #     # conf.get_default.region='us'
@@ -901,7 +967,8 @@ def evaluar_comandos(msg, txt):
     # print(arreglo_botones)
     if (len(arreglo_botones)) == 0:
         bot.send_message(obtener_chat_id(msg), 'No se han podido definir los botones para ofrecerle informacion, se enviara al inicio para indicar sus datos nuevamente ')
-        iniciar(msg)
+        # iniciar(msg)
+        identificarme(msg)
         return False, txt
 
     txt2=txt.replace(" ","")
@@ -996,6 +1063,11 @@ def procesar_imagen(msg):
         # ocr_res = pytesseract.image_to_string(imagen, lang='spa')
         ocr_res = pytesseract.image_to_string(imagen)
         print(ocr_res)
+        bot.send_message(obtener_chat_id(msg), 'lo que pude extraer de la imagen recibida')
+        if (len(ocr_res.strip()) > 0):
+            bot.send_message(obtener_chat_id(msg), ocr_res)
+        else:
+            bot.send_message(obtener_chat_id(msg), 'no pude obtener informacion de la imagen recibida')
     except Exception as error:
         print('no pude procesar_imagen',chat_id,error)
     bitacora('sali procesar_imagen')
@@ -1085,7 +1157,11 @@ if __name__ == '__main__':
     # if (not SERVER_LOCAL):
     # print('definir_comandos ',definir_comandos())
     print('Bot iniciado')
-    if not SERVER_LOCAL:
-        bot.send_message(os.getenv('MI_ID_MOVISTAR', 'No definido SERVER_LOCAL'),'Reiniciado el bot '+servidor)
+    # if not SERVER_LOCAL:
+    bitacora('iniciando bot, mensaje a '+TELEGRAM_API_TOKEN)
+    id = os.getenv('MI_ID_MOVISTAR', 'No definido SERVER_LOCAL')
+    bot.send_message(id,'Reiniciado el bot '+servidor)
     # # serve(servidor, host='0.0.0.0')
-    app.run(debug=True, host='0.0.0.0',port=PORT)
+    app.run(debug=True)
+    # , host='0.0.0.0',port=PORT)
+

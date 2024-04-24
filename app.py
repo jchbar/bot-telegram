@@ -99,6 +99,7 @@ BOT_COMMANDS= [
     {"command":"iniciar", "description":"Iniciar el Bot"},
     {"command":"identificarme","description":"Iniciar sesion de datos"},
     {"command":"ayuda", "description":"Muestra los comandos a utilizar"},
+    {"command":"versiones", "description":"Muestra las actualizaciones que me han hecho"},
     # {"command":"progreso", "description":"Probar barra de progreso"},
     # {"command":"responderbien", "description":"Probar datos fijos y respuesta buena json"},
     # {"command":"respondermal", "description":"Probar datos fijos y respuesta errado json"},
@@ -121,23 +122,72 @@ este_bot = ' para Consultas de Caja de Ahorro  '
 version_bot = __version__
 # txt_pregunta_cedula = "Cuál es su número de cédula"
 # txt_pregunta_codigo = "Cuál es el código de asociado"
-txt_pregunta_cedula = "Cual es su numero de cedula"
-txt_pregunta_codigo = "Cual es el codigo de asociado"
+atxt_pregunta_cedula = [
+    "Cual es su numero de cedula",
+    "Indiqueme su numero de cedula",
+    "Escribame su numero de cedula",
+    "Indiqueme por favor su numero de cedula",
+    "Escribame por favor su numero de cedula"
+]
+atxt_pregunta_codigo = [
+    "Cual es el codigo de asociado",
+    "Indiqueme su codigo de asociado",
+    "Escribame su el codigo de asociado",
+    "Indiqueme por favor el codigo de asociado",
+    "Escribame por favor el codigo de asociado"
+]
+txt_pregunta_cedula = 'Indiqueme por favor su numero de cedula'
+txt_pregunta_codigo = 'Indiqueme por favor el codigo de asociado'
 txt_si_disponibilidad = "Si, es correcto"
 txt_no_disponibilidad = "No, no es correcto"
-txt_despedidad = '<b>Gracias</b> por usar este servicio'
+# txt_despedida = '<b>Gracias</b> por usar este servicio'
+txt_despedida = [
+    '<b>Gracias</b> por usar este servicio, Su sesion se ha cerrado con exito',
+    'Su sesion se ha cerrado con exito, <b>Gracias</b> por usar este servicio',
+    '<b>Gracias</b> Ha sido un placer ayudarte',
+    'Agradezco la oportunidad de haber sido de ayuda',
+    'Ha sido genial ayudarte'
+    ]
+
 datos_consulta = {
     "chat_id":0,
-    "cedula":"",
-    "codigo":"",
+    "cedula":"09377388",
+    "codigo":"00914",
     "id_msg_cedula":0,
     "id_msg_codigo":0
 }
+
+
 arreglo_botones = []
+historial=[
+    {
+        'version'   : "1.0.0",
+        'fecha'     : '2024/04/10',
+        'nota'      : 'Version preliminar, pruebas de api Telegram y Endpoint bdd, pruebas de barra de progreso '
+    },
+    {
+        'version'   : "1.1.0",
+        'fecha'     : '2024/04/22',
+        'nota'      : 'Realiza envio de imagenes en el saludo, validacion de sesion y botonera como menu de sesion'
+    },
+    {
+        'version'   : "1.2.0",
+        'fecha'     : '2024/04/24',
+        'nota'      : 'Incorporado saludo al inicio, funcional boton prestamos'
+    },
+] 
 
 # logger = logging.getLogger(__name__)
 # logging.basicConfig(filename="logger.log",  level=logging.DEBUG)
 # # encoding="utf-8",
+
+def textoAlAzar(texto):
+    azar = random.randint(0,len(texto)-1)
+    # print(texto[azar])
+    return texto[azar]
+
+def textoazar(msg):
+    textoAlAzar(txt_despedida)
 
 def inicializar():
     arreglo_botones = []
@@ -148,6 +198,21 @@ def inicializar():
         "id_msg_cedula":0,
         "id_msg_codigo":0
     }
+
+def saludar():
+    tiempoh = time.strftime('%H',time.localtime())
+    saludo = 'Buenas...'
+    try:
+        if tiempoh < '12':
+            saludo='Buenos dias'
+        elif tiempoh >= '12' and tiempoh < '18':
+            saludo='Buenas tardes'
+        else:
+            saludo='Buenas noches'
+    except Exception as error:
+        print('error en saludar',error)
+    bitacora('sali saludar  ')
+    return saludo
 
 def write_json(data, file_name='response.json'):
     with open(file_name, 'a') as f:
@@ -297,9 +362,102 @@ def definir_comandos(BOT_COMMANDS):
     return r
 
 def saldoprestamos(msg):
+    cid=obtener_chat_id(msg)
+    bitacora('entre saldoprestamos ')
+    sendChatAction(cid,'texto')
+    # mid = barra_progreso(0,'Estableciendo conexion a datos',cid)
+    respuesta, resultado, mid = consultarDatos(msg, cid, 0, 'obtenerPrestamos')
+    # print('respues en saldohaberes ',respuesta, resultado)
+
+    if respuesta =='Ok':
+        respuesta=resultado
+        sendChatAction(cid,'texto')
+        barra_progreso(numAzar(45,55),'Procesando informacion',cid, mid)
+        time.sleep(0.5)
+        sendChatAction(cid,'texto')
+        barra_progreso(numAzar(85,95),'Entregando informacion',cid, mid)
+        time.sleep(0.5)
+        barra_progreso(100,'Preparando la entrega de informacion',cid, mid)
+        socio = respuesta['datos']
+        asocio      = float(socio['hab_f_prof'])
+        apatronal   = float(socio['hab_f_empr'])
+        # reserva     = float(respuesta['reserva'])
+        asocio      = "{:,.3f}".format(asocio)
+        apatronal   = "{:,.3f}".format(apatronal)
+        # reserva     = "{:,.3f}".format(reserva)
+        afectan = respuesta['afectan']
+        van = 0
+        if len(afectan) > 0:
+            cuento = '<b>Saldos que <u>Afectan</u> Disponibilidad</b>'
+            sendChatAction(cid,'texto')
+            bot.send_message(cid, cuento, parse_mode='html')
+            time.sleep(1)
+            sendChatAction(cid,'texto')
+            cuento = ''
+            for prestamo in afectan:
+                van = van + 1
+                saldo      = float(prestamo['saldo'])
+                saldo      = "{:,.3f}".format(saldo)
+                cuento += (str(van)+')'+prestamo['descr_pres'] + ' # '+
+                prestamo['nropre_sdp']+' '+prestamo['descuento'] + 
+                ' ('+ prestamo['ultcan_sdp']+' de '+prestamo['nrocuotas']+
+                ') Saldo <b>'+saldo+ '</b>\n')
+            bot.send_message(cid, cuento, parse_mode='html')
+
+        van = 0
+        afectan = respuesta['noafectan']
+        if len(afectan) > 0:
+            cuento = '<b>Saldos que <u>No Afectan</u> Disponibilidad</b>'
+            sendChatAction(cid,'texto')
+            bot.send_message(cid, cuento, parse_mode='html')
+            time.sleep(1)
+            sendChatAction(cid,'texto')
+            cuento = ''
+            for prestamo in afectan:
+                van = van + 1
+                saldo      = float(prestamo['saldo'])
+                saldo      = "{:,.3f}".format(saldo)
+                cuento += (str(van)+')'+prestamo['descr_pres'] + ' # '+
+                prestamo['nropre_sdp']+' '+prestamo['descuento'] + 
+                ' ('+ prestamo['ultcan_sdp']+' de '+prestamo['nrocuotas']+
+                ') Saldo <b>'+saldo+ '</b>\n')
+            bot.send_message(cid, cuento, parse_mode='html')
+
+        if (len(respuesta['noafectan']) < 1) and (len(respuesta['afectan']) < 1):
+            sendChatAction(cid,'texto')
+            bot.send_message(cid, 'No tiene prestamos registrados', parse_mode='html')
+
+        if (float(respuesta['tsuspension']) > 0):
+            tsuspension     = float(respuesta['tsuspension'])
+            tsuspension     = "{:,.3f}".format(tsuspension)
+            cuento = 'Tiene un saldo pendiente de '+tsuspension+'\n'
+            sendChatAction(cid,'texto')
+            bot.send_message(cid, cuento, parse_mode='html')
+
+        cuento =  ''
+        cuento += '\nPara mayor informacion puede consultar el Estado de Cuenta en '
+        cuento += '<a href="https://estadodecuenta.cappoucla.org.ve">Estado de Cuenta</a>\n'
+        cuento += '\nIgualmente lo invitamos a visitar regularmente nuestro sitio web '
+        # cuento += '<a href="https://cappoucla.org.ve">cappoucla.org.ve</a>\n'
+        cuento += '<a href="'+SITIOWEB+'">'+SITIOWEB+'</a>\n'
+        sendChatAction(cid,'texto')
+        bot.send_message(cid, cuento, parse_mode='html')
+    else:
+        barra_progreso(100,'Preparando entrega de informacion',cid, mid)
+        markup = ReplyKeyboardRemove()
+        bot.send_message(cid, '<b>No he podido obtener la informacion solicitada, revise los datos e intente de nuevo</b>', parse_mode='html')
+        bot.send_message(cid, 
+                '<b>Si no esta afiliado a la institucion puede visitar </b><a href="'+SITIOWEB+'">'+SITIOWEB+'</a> para su inscripcion', 
+                parse_mode='html', 
+                reply_markup=markup)
+    bitacora('sali saldoprestamos ')
+
+def versiones(msg):
     chat_id=obtener_chat_id(msg)
-    sendChatAction(chat_id,'texto')
-    bot.send_message(chat_id, 'Lo siento... \npendiente de desarrollo saldo de prestamos',parse_mode='html')
+    for version in historial:
+        sendChatAction(chat_id,'texto')
+        bot.send_message(chat_id, '<b>'+version['version'] + '</b> el '+version['fecha']+' =>' + version['nota'], parse_mode='html')
+        time.sleep(0.5)
 
 def informarpago(msg):
     chat_id=obtener_chat_id(msg)
@@ -309,7 +467,8 @@ def informarpago(msg):
 def cerrarsesion(msg):
     chat_id=obtener_chat_id(msg)
     sendChatAction(chat_id,'texto')
-    bot.send_message(chat_id, txt_despedida,parse_mode='html')
+    markup = ReplyKeyboardRemove()
+    bot.send_message(chat_id, textoAlAzar(txt_despedida), parse_mode='html', reply_markup=markup)
     # iniciar(msg)
 
 def botones_session(msg, nombre):
@@ -350,7 +509,7 @@ def botones_session(msg, nombre):
     botones.row(txt_haberes, txt_prestamos)
     botones.row(txt_pagos)
     botones.row(txt_salir)
-    msg = bot.send_message(chat_id, 'Bienvenido(a): <b>'+nombre+'</b>\nOpciones disponibles ', reply_markup=botones, parse_mode='html')
+    msg = bot.send_message(chat_id, saludar()+' <b>'+nombre+'</b>\nOpciones disponibles ', reply_markup=botones, parse_mode='html')
     definir_comandos(BOT_COMMANDS)
 
 
@@ -446,7 +605,7 @@ def confirmar_datos(message):
                 eliminar_msg(chat_id, id_msg_cod)
             else:
                 codigo = texto
-                respuesta, resultado, mid = consultardatos(message, chat_id, 0)
+                respuesta, resultado, mid = consultarDatos(message, chat_id, 0)
                 print('respues en confirmar_datos ',respuesta, resultado)
                 if respuesta == 'Ok':
                     eliminar_msg(chat_id, mid)
@@ -494,7 +653,7 @@ def preguntar_codigo(message):
         bot.register_next_step_handler(respuesta, responder_disponibilidad)
     bitacora('sali preguntar_codigo ')
 
-def consultardatos(msg, cid, mid):
+def consultarDatos(msg, cid, mid, endpoint='obtenerdatosB'):
     bitacora('entre consultardatos')
     try:
         # cid=obtener_chat_id(msg)
@@ -502,7 +661,7 @@ def consultardatos(msg, cid, mid):
         # print('mid responder_disponibilidad',mid)
         cedula = datos_consulta['cedula']
         codigo = datos_consulta['codigo']
-        respuesta = solicitar_informacion(cedula, codigo, cid, mid, 'obtenerdatosB')
+        respuesta = solicitar_informacion(cedula, codigo, cid, mid, endpoint)
         write_json(respuesta, 'telegram_request.json')
         return respuesta['respuesta'], respuesta, mid
     except Exception as error:
@@ -516,7 +675,7 @@ def saldohaberes(msg):
     bitacora('entre saldohaberes ')
     sendChatAction(cid,'texto')
     # mid = barra_progreso(0,'Estableciendo conexion a datos',cid)
-    respuesta, resultado, mid = consultardatos(msg, cid, 0)
+    respuesta, resultado, mid = consultarDatos(msg, cid, 0)
     # print('respues en saldohaberes ',respuesta, resultado)
 
     if respuesta =='Ok':
@@ -725,6 +884,7 @@ def barra_progreso(porcentaje, texto="", cid=None, mid=None, terminal=False):
                     bot.edit_message_text(mensaje_telegram, cid, mid, parse_mode='html')
                     return 
                 elif porcentaje == 100:
+                    bot.edit_message_text('Cerrando conexion', cid, mid, parse_mode='html')
                     time.sleep(1)
                     eliminar_msg(cid, mid)
                     return
@@ -765,7 +925,7 @@ def solicitar_informacion(cedula, codigo, cid, mid, comando):
             "codigo": codigo,
         }
         url_post = URL_API+comando
-        # print(url_post, new_data)
+        print(url_post, new_data)
         post_response = requests.post(url_post, json=new_data)
         # Print the response
         post_response_json = post_response.json()
@@ -848,6 +1008,8 @@ def identificarme(msg):
     bitacora('entre identificarme ')
     sendChatAction(chat_id,'texto')
     botones = ReplyKeyboardRemove()
+    # global txt_pregunta_cedula = textoAlAzar(txt_pregunta_cedula)
+    # global txt_pregunta_codigo = textoAlAzar(txt_pregunta_codigo)
     # respuesta = bot.send_message(chat_id, '',reply_markup=botones)
     markup = ForceReply()
     respuesta = bot.send_message(
@@ -881,7 +1043,7 @@ def continuar_identificacion(msg):
                 texto = texto.zfill(5)
                 datos_consulta['codigo']=texto
                 datos_consulta['id_msg_codigo']=obtener_msg_id(msg)
-                respuesta, resultado, mid = consultardatos(msg, chat_id, 0)
+                respuesta, resultado, mid = consultarDatos(msg, chat_id, 0)
                 print('respues en continuar_identificacion ',respuesta, mid)
                 if respuesta == 'Ok':
                     eliminar_msg(chat_id, mid)
@@ -1050,7 +1212,7 @@ def index():
             if es_commando == True: #(existe_comando(txt)):
                 if (txt == 'start'):
                     txt = 'iniciar'
-                bot.send_message(chat_id, 'has escogido '+txt)
+                bot.send_message(chat_id, 'Seleccionaste <i>'+txt+'</i>', parse_mode='html')
                 # getattr(self, txt)()
                 # globals()[disponibilidad]
                 eval(txt)(msg)
@@ -1203,6 +1365,9 @@ if __name__ == '__main__':
     # print('Bot iniciado')
     # if not SERVER_LOCAL:
     # # serve(servidor, host='0.0.0.0')
+    # txt_pregunta_cedula = textoAlAzar(atxt_pregunta_cedula)
+    # txt_pregunta_codigo = textoAlAzar(atxt_pregunta_codigo)
+    print('las preguntas ',txt_pregunta_cedula, txt_pregunta_codigo)
     bitacora('iniciando bot, mensaje a '+TELEGRAM_API_TOKEN)
     recibir_msg(app)
     id = os.getenv('MI_ID_MOVISTAR', 'No definido SERVER_LOCAL')

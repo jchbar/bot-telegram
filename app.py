@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 # coding: utf-8
 
@@ -174,6 +173,11 @@ historial=[
         'version'   : "1.2.0",
         'fecha'     : '2024/04/24',
         'nota'      : 'Incorporado saludo al inicio, funcional boton prestamos'
+    },
+    {
+        'version'   : "1.3.0",
+        'fecha'     : '2024/04/25',
+        'nota'      : 'Corregido no mostrar deuda pendiente, se coloco en los items saludo, disponibilidad, haberes y prestamos'
     },
 ] 
 
@@ -430,7 +434,7 @@ def saldoprestamos(msg):
         if (float(respuesta['tsuspension']) > 0):
             tsuspension     = float(respuesta['tsuspension'])
             tsuspension     = "{:,.3f}".format(tsuspension)
-            cuento = 'Tiene un saldo pendiente de '+tsuspension+'\n'
+            cuento = '\n<b>Tiene un saldo pendiente de '+tsuspension+'</b>\n\n'
             sendChatAction(cid,'texto')
             bot.send_message(cid, cuento, parse_mode='html')
 
@@ -471,7 +475,8 @@ def cerrarsesion(msg):
     bot.send_message(chat_id, textoAlAzar(txt_despedida), parse_mode='html', reply_markup=markup)
     # iniciar(msg)
 
-def botones_session(msg, nombre):
+def botones_session(msg, nombre, saldoDeuda):
+    print(datos_consulta)
     if (datos_consulta['cedula'] == '' or datos_consulta['codigo']==''):
         bot.send_message(chat_id, 'Lo siento... \nAlgo malo ha ocurrido con los datos para obtener sesion, <b>revise sus datos e intente nuevamente</b>',parse_mode='html')
         # iniciar()
@@ -509,7 +514,10 @@ def botones_session(msg, nombre):
     botones.row(txt_haberes, txt_prestamos)
     botones.row(txt_pagos)
     botones.row(txt_salir)
-    msg = bot.send_message(chat_id, saludar()+' <b>'+nombre+'</b>\nOpciones disponibles ', reply_markup=botones, parse_mode='html')
+    cuento = saludar()+' <b>'+nombre.strip()+'</b>'
+    cuento += saldoPendiente(saldoDeuda)
+    cuento += '\nOpciones disponibles '
+    msg = bot.send_message(chat_id, cuento, reply_markup=botones, parse_mode='html')
     definir_comandos(BOT_COMMANDS)
 
 
@@ -609,7 +617,9 @@ def confirmar_datos(message):
                 print('respues en confirmar_datos ',respuesta, resultado)
                 if respuesta == 'Ok':
                     eliminar_msg(chat_id, mid)
-                    botones_session(message, resultado['datos']['ape_prof'].strip() + ' ' + resultado['datos']['nombr_prof'].strip())
+                    cuento = resultado['datos']['ape_prof'].strip() + ' ' + resultado['datos']['nombr_prof'].strip()+'\n'
+                    # cuento += saldoPendiente(resultado['tsuspension'])
+                    botones_session(message, cuento, resultado['tsuspension'])
                 else:
                     markup = ReplyKeyboardRemove()
                     bot.send_message(chat_id, 
@@ -700,6 +710,8 @@ def saldohaberes(msg):
         cuento += 'Ahorros Socio al '+socio['uas']+': <b>'+asocio+'</b>\n'
         cuento += 'Aporte Patronal al '+socio['uap']+': <b>'+apatronal+'</b>\n'
         cuento += '<u>Menos</u> Reserva Legal <b>'+reserva+'</b>\n'
+
+        cuento += saldoPendiente(respuesta['tsuspension'])
 
         # cuento += 'Ahorros Socio al '+socio['uas']+': <b>'+str(socio['hab_f_prof'])+'</b>\n'
         # cuento += 'Aporte Patronal al '+socio['uap']+': <b>'+str(socio['hab_f_empr'])+'</b>\n'
@@ -914,7 +926,28 @@ def progreso(cid):
     barra_progreso(100,'finalizando',cid, mid)
     bitacora('sali progreso  ')
 
-# enviarEmail
+def registrar_peticion(msg):
+    bitacora('entre procesar_peticion')
+    try:
+        # print('cid',cid,'mid',mid)
+        new_data = {
+            "message": msg
+        }
+        url_post = URL_API+'guardarSolicitudTG'
+        print(url_post, new_data)
+        post_response = requests.post(url_post, json=new_data)
+        # Print the response
+        post_response_json = post_response.json()
+        # print(post_response_json)
+        return post_response_json
+    except Exception as error:
+        print('error en procesar_peticion',error)
+        return {
+            "respuesta": "NoOk"
+        }
+    bitacora('sali procesar_peticion')
+
+
 def solicitar_informacion(cedula, codigo, cid, mid, comando):
     bitacora('entre solicitar_informacion  ')
     try:
@@ -937,6 +970,14 @@ def solicitar_informacion(cedula, codigo, cid, mid, comando):
             "respuesta": "NoOk"
         }
     bitacora('sali solicitar_informacion  ')
+
+def saldoPendiente(saldo):
+    if (float(saldo) > 0):
+        tsuspension     = float(saldo)
+        tsuspension     = "{:,.3f}".format(tsuspension)
+        return '\n<b>Tiene un saldo pendiente de '+tsuspension+'</b>\n\n'
+    else:
+        return '\n'
 
 
 def responder_disponibilidad(cid):
@@ -966,10 +1007,7 @@ def responder_disponibilidad(cid):
             # cuento = "Estimado(a) Socio(a):<b><span class='tg-spoiler'>"+socio['nombre']+'</span><b>\n'
             cuento = "Estimado(a) Socio(a): <b>"+socio['nombre']+'</b>\n'
             cuento += 'Su disponibilidad es de <b>'+disponibilidad+'</b>\n'
-            if (float(respuesta['tsuspension']) > 0):
-                tsuspension     = float(respuesta['tsuspension'])
-                tsuspension     = "{:,.3f}".format(tsuspension)
-                cuento += 'Tiene un saldo pendiente de '+tsuspension+'\n'
+            cuento += saldoPendiente(respuesta['tsuspension'])
             cuento += 'Datos actualizados el '+respuesta['actualizacion']['fechaactdatos']+'\n'
             cuento += '\nPara mayor informacion puede consultar el Estado de Cuenta en '
             cuento += '<a href="https://estadodecuenta.cappoucla.org.ve">Estado de Cuenta</a>\n'
@@ -1189,6 +1227,7 @@ def index():
     try:
         if (request.method == 'POST'):
             msg  = request.get_json(force=True,silent=True)
+            registrar_peticion(msg)
             # for (key, val) in msg.items():
             #     print_properties(val, key)
 

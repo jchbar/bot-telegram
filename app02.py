@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+__version__ = "1.3.0"
+__date__ = '2024/04/25'
+__author__ = "Juan C Hernandez B"
+
 '''
 python3 -m venv bot-telegram
 source bin/activate
@@ -176,18 +180,7 @@ historial=[
         'fecha'     : '2024/04/25',
         'nota'      : 'Corregido no mostrar deuda pendiente, se coloco en los items saludo, disponibilidad, haberes y prestamos'
     },
-    {
-        'version'   : "1.3.1",
-        'fecha'     : '2024/04/27',
-        'nota'      : 'colocada funcion temporal /datospruebas, unificado mensaje cierre, correccion en api nombre, reimpresion de botones (desaparecen en iphone) '
-    },
 ] 
-
-nversiones = len(historial)-1
-__version__ = historial[nversiones]['version']
-__date__ = historial[nversiones]['fecha']
-__author__ = "Juan C Hernandez B"
-
 
 datos_pruebas = [
     {
@@ -477,7 +470,7 @@ def saldoprestamos(msg):
         # cuento += '<a href="'+SITIOWEB+'">'+SITIOWEB+'</a>\n'
         sendChatAction(cid,'texto')
         bot.send_message(cid, cuento, parse_mode='html')
-        cuento_cierre(msg, '', respuesta['tsuspension'])
+        cuento_cierre(msg, '', respuesta['tsuspension'], False)
 
     else:
         barra_progreso(100,'Preparando entrega de informacion',cid, mid)
@@ -723,7 +716,6 @@ def consultarDatos(msg, cid, mid, endpoint='obtenerdatosB'):
     return 'NoOk', [], 0
 
 def cuento_cierre(msg, nombre, saldoDeuda):
-    cid = obtener_chat_id(msg)
     cuento = ''
     cuento += '\nPara mayor informacion puede consultar el Estado de Cuenta en '
     cuento += '<a href="https://estadodecuenta.cappoucla.org.ve">Estado de Cuenta</a>\n'
@@ -774,7 +766,7 @@ def saldohaberes(msg):
         # cuento += '<a href="'+SITIOWEB+'">'+SITIOWEB+'</a>\n'
         sendChatAction(cid,'texto')
         bot.send_message(cid, cuento, parse_mode='html')
-        cuento_cierre(msg, '', respuesta['tsuspension'])
+        cuento_cierre(msg, '', respuesta['tsuspension'], False)
     else:
         barra_progreso(100,'Preparando entrega de informacion',cid, mid)
         markup = ReplyKeyboardRemove()
@@ -802,8 +794,7 @@ def disponibilidad(msg):
     chat_id=obtener_chat_id(msg)
     bitacora('entre disponibilidad ')
     sendChatAction(chat_id,'texto')
-    # responder_disponibilidad(obtener_chat_id(msg))
-    responder_disponibilidad(msg)
+    responder_disponibilidad(obtener_chat_id(msg))
     bitacora('sali disponibilidad ')
 
 def clave_en_lista(msg, buscar):
@@ -1036,8 +1027,7 @@ def saldoPendiente(saldo):
         return '\n'
 
 
-def responder_disponibilidad(msg):
-    cid = obtener_chat_id(msg)
+def responder_disponibilidad(cid):
     bitacora('entre responder_disponibilidad  ')
     try:
         mid = barra_progreso(0,'Estableciendo conexion a datos',cid)
@@ -1073,7 +1063,7 @@ def responder_disponibilidad(msg):
             # cuento += '<a href="'+SITIOWEB+'">'+SITIOWEB+'</a>\n'
             sendChatAction(cid,'texto')
             bot.send_message(cid, cuento, parse_mode='html')
-            cuento_cierre(msg, '', respuesta['tsuspension'])
+            cuento_cierre(msg, '', respuesta['tsuspension'], False)
 
         else:
             barra_progreso(100,'Preparando entrega de informacion',cid, mid)

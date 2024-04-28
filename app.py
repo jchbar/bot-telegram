@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # coding: utf-8
-
 '''
 python3 -m venv bot-telegram
 source bin/activate
@@ -114,8 +113,6 @@ BOT_COMMANDS_SESION= [
     # {"command":"ocr", "description":"Probar ocr"},
     # {"command":"procesar_imagen", "description":"Probar obtener images y procesar datos"},
 ]
-este_bot = ' para Consultas de Caja de Ahorro  '
-version_bot = __version__
 # txt_pregunta_cedula = "Cuál es su número de cédula"
 # txt_pregunta_codigo = "Cuál es el código de asociado"
 atxt_pregunta_cedula = [
@@ -150,7 +147,9 @@ datos_consulta = {
     "cedula":"09377388",
     "codigo":"00914",
     "id_msg_cedula":0,
-    "id_msg_codigo":0
+    "id_msg_codigo":0,
+    "saldoPrestamo" :0,
+    "saldoSuspension":0
 }
 
 
@@ -188,7 +187,6 @@ __version__ = historial[nversiones]['version']
 __date__ = historial[nversiones]['fecha']
 __author__ = "Juan C Hernandez B"
 
-
 datos_pruebas = [
     {
         'cedula' : '7300376',
@@ -211,6 +209,9 @@ datos_pruebas = [
         'nota'   : 'con prestamos y deuda pendiente'
     }
 ]
+
+este_bot = ' para Consultas de Caja de Ahorro  '
+version_bot = __version__
 
 # logger = logging.getLogger(__name__)
 # logging.basicConfig(filename="logger.log",  level=logging.DEBUG)
@@ -396,6 +397,69 @@ def definir_comandos(BOT_COMMANDS):
     bitacora('sali definir_comandos')
     return r
 
+def deudapendiente(msg):
+    cid=obtener_chat_id(msg)
+    bitacora('entre deudapendiente ')
+    sendChatAction(cid,'texto')
+    # mid = barra_progreso(0,'Estableciendo conexion a datos',cid)
+    respuesta, resultado, mid = consultarDatos(msg, cid, 0, 'deudaPendiente')
+    # print('respues en saldohaberes ',respuesta, resultado)
+
+    if respuesta =='Ok':
+        respuesta=resultado
+        sendChatAction(cid,'texto')
+        barra_progreso(numAzar(45,55),'Procesando informacion',cid, mid)
+        time.sleep(0.5)
+        sendChatAction(cid,'texto')
+        barra_progreso(numAzar(85,95),'Entregando informacion',cid, mid)
+        time.sleep(0.5)
+        barra_progreso(100,'Preparando la entrega de informacion',cid, mid)
+        socio = respuesta['datos']
+        asocio      = float(socio['hab_f_prof'])
+        apatronal   = float(socio['hab_f_empr'])
+        # reserva     = float(respuesta['reserva'])
+        asocio      = "{:,.3f}".format(asocio)
+        apatronal   = "{:,.3f}".format(apatronal)
+        # reserva     = "{:,.3f}".format(reserva)
+        suspensiones = respuesta['suspensiones']
+        van = 0
+        if len(suspensiones) > 0:
+            cuento = '<b>Deuda Pendiente</b>'
+            sendChatAction(cid,'texto')
+            bot.send_message(cid, cuento, parse_mode='html')
+            time.sleep(1)
+            sendChatAction(cid,'texto')
+            cuento = 'Los siguientes datos representan\n<b>Concepto, fallo, fecha suspension y monto</b>\n'
+            for prestamo in suspensiones:
+                van = van + 1
+                saldo      = float(prestamo['monto'])
+                saldo      = "{:,.3f}".format(saldo)
+                cuento += (str(van)+')'+prestamo['prestamo'] + ' '+
+                prestamo['fallo']+' '+prestamo['suspendido'] + 
+                ' <b>'+saldo+ '</b>\n')
+            bot.send_message(cid, cuento, parse_mode='html')
+
+        # if (float(respuesta['tsuspension']) > 0):
+        #     tsuspension     = float(respuesta['tsuspension'])
+        #     tsuspension     = "{:,.3f}".format(tsuspension)
+        #     cuento = '\n<b>Tiene un saldo pendiente de '+tsuspension+'</b>\n\n'
+        #     sendChatAction(cid,'texto')
+        #     bot.send_message(cid, cuento, parse_mode='html')
+
+        # sendChatAction(cid,'texto')
+        # bot.send_message(cid, cuento, parse_mode='html')
+        cuento_cierre(msg, '', respuesta['tsuspension'])
+
+    else:
+        barra_progreso(100,'Preparando entrega de informacion',cid, mid)
+        markup = ReplyKeyboardRemove()
+        bot.send_message(cid, '<b>No he podido obtener la informacion solicitada, revise los datos e intente de nuevo</b>', parse_mode='html')
+        bot.send_message(cid, 
+                '<b>Si no esta afiliado a la institucion puede visitar </b><a href="'+SITIOWEB+'">'+SITIOWEB+'</a> para su inscripcion', 
+                parse_mode='html', 
+                reply_markup=markup)
+    bitacora('sali deudapendiente ')
+
 def saldoprestamos(msg):
     cid=obtener_chat_id(msg)
     bitacora('entre saldoprestamos ')
@@ -462,12 +526,12 @@ def saldoprestamos(msg):
             sendChatAction(cid,'texto')
             bot.send_message(cid, 'No tiene prestamos registrados', parse_mode='html')
 
-        if (float(respuesta['tsuspension']) > 0):
-            tsuspension     = float(respuesta['tsuspension'])
-            tsuspension     = "{:,.3f}".format(tsuspension)
-            cuento = '\n<b>Tiene un saldo pendiente de '+tsuspension+'</b>\n\n'
-            sendChatAction(cid,'texto')
-            bot.send_message(cid, cuento, parse_mode='html')
+        # if (float(respuesta['tsuspension']) > 0):
+        #     tsuspension     = float(respuesta['tsuspension'])
+        #     tsuspension     = "{:,.3f}".format(tsuspension)
+        #     cuento = '\n<b>Tiene un saldo pendiente de '+tsuspension+'</b>\n\n'
+        #     sendChatAction(cid,'texto')
+        #     bot.send_message(cid, cuento, parse_mode='html')
 
         # cuento =  ''
         # cuento += '\nPara mayor informacion puede consultar el Estado de Cuenta en '
@@ -475,8 +539,8 @@ def saldoprestamos(msg):
         # cuento += '\nIgualmente lo invitamos a visitar regularmente nuestro sitio web '
         # # cuento += '<a href="https://cappoucla.org.ve">cappoucla.org.ve</a>\n'
         # cuento += '<a href="'+SITIOWEB+'">'+SITIOWEB+'</a>\n'
-        sendChatAction(cid,'texto')
-        bot.send_message(cid, cuento, parse_mode='html')
+        # sendChatAction(cid,'texto')
+        # bot.send_message(cid, cuento, parse_mode='html')
         cuento_cierre(msg, '', respuesta['tsuspension'])
 
     else:
@@ -532,6 +596,7 @@ def botones_session(msg, nombre, saldoDeuda, enviarSaludo=False):
     txt_Disponibilidad  = 'Disponibilidad'
     txt_haberes         = 'Saldo Haberes'
     txt_prestamos       = 'Saldo Prestamos'
+    txt_pendiente       = 'Deuda Pendiente'
     txt_pagos           = 'Informar Pago'
     txt_salir           = 'Cerrar Sesion'
 
@@ -541,6 +606,7 @@ def botones_session(msg, nombre, saldoDeuda, enviarSaludo=False):
         arreglo_botones.append(txt_Disponibilidad)
         arreglo_botones.append(txt_haberes)
         arreglo_botones.append(txt_prestamos)
+        arreglo_botones.append(txt_pendiente)
         arreglo_botones.append(txt_pagos)
         arreglo_botones.append(txt_salir)
     # print('arreglo_botones despues')
@@ -552,7 +618,16 @@ def botones_session(msg, nombre, saldoDeuda, enviarSaludo=False):
         resize_keyboard=True)
     # markup.add(txt_Disponibilidad, txt_haberes, txt_prestamos, txt_pagos, txt_salir)
     botones.row(txt_Disponibilidad)
-    botones.row(txt_haberes, txt_prestamos)
+    if datos_consulta['saldoPrestamo'] > 0:
+        if datos_consulta['saldoSuspension'] > 0:
+            botones.row(txt_haberes, txt_prestamos, txt_pendiente)
+        else:
+            botones.row(txt_haberes, txt_prestamos)
+    else:
+        if datos_consulta['saldoSuspension'] > 0:
+            botones.row(txt_haberes, txt_pendiente)
+        else:
+            botones.row(txt_haberes)
     botones.row(txt_pagos)
     botones.row(txt_salir)
     cuento = ''
@@ -660,6 +735,10 @@ def confirmar_datos(message):
                 print('respues en confirmar_datos ',respuesta, resultado)
                 if respuesta == 'Ok':
                     eliminar_msg(chat_id, mid)
+                    print('prestamos ',float(resultado['afectan']['saldo'])+float(resultado['noafectan']['saldo']))
+                    print('pediente ',float(resultado['tsuspension']))
+                    datos_consulta['saldoPrestamo']=float(resultado['afectan']['saldo'])+float(resultado['noafectan']['saldo'])
+                    datos_consulta['saldoSuspension']=float(resultado['tsuspension'])
                     cuento = resultado['datos']['ape_prof'].strip() + ' ' + resultado['datos']['nombr_prof'].strip()+'\n'
                     # cuento += saldoPendiente(resultado['tsuspension'])
                     botones_session(message, cuento, resultado['tsuspension'], True)
@@ -1117,6 +1196,7 @@ def identificarme(msg):
     bot.register_next_step_handler(respuesta, preguntar_codigo)
     bitacora('sali identificarme ')
 
+'''
 def continuar_identificacion(msg):
     bitacora('entre continuar identificarme  ')
     try:
@@ -1159,7 +1239,7 @@ def continuar_identificacion(msg):
         bot.send_message(chat_id, 'Escribiste algo que no he entendido que quieres decir con <b><u>'+txt+'</u></b>\n Puedes utilizar <b>/</b> para ver los comandos o para obtener <b>/ayuda</b> ',parse_mode='html')
         iniciar()
     bitacora('sali continuar identificarme  ')
-
+'''
 
 def procesar_respuesta(msg):
     bitacora('entre procesar_respuesta  ')
@@ -1474,5 +1554,5 @@ if __name__ == '__main__':
     bitacora('iniciando bot, mensaje a '+TELEGRAM_API_TOKEN)
     recibir_msg(app)
     id = os.getenv('MI_ID_MOVISTAR', 'No definido SERVER_LOCAL')
-    bot.send_message(id,'Reiniciado el bot '+servidor)
+    bot.send_message(id,'Reiniciado el bot '+servidor + ' '+este_bot + 'Version ' + version_bot)
     app.run(debug=True, host='0.0.0.0',port=PORT)

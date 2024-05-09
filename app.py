@@ -93,26 +93,31 @@ BOT_COMMANDS= [
     {"command":"iniciar", "description":"Iniciar el Bot"},
     {"command":"identificarme","description":"Iniciar sesion de datos"},
     {"command":"ayuda", "description":"Muestra los comandos a utilizar"},
-    {"command":"versiones", "description":"Muestra las actualizaciones que me han hecho"},
-    {"command":"datospruebas", "description":"Muestra datos para pruebas"},
-    # {"command":"progreso", "description":"Probar barra de progreso"},
-    # {"command":"responderbien", "description":"Probar datos fijos y respuesta buena json"},
-    # {"command":"respondermal", "description":"Probar datos fijos y respuesta errado json"},
-    # {"command":"ocr", "description":"Probar ocr"},
-    # {"command":"procesar_imagen", "description":"Probar obtener images y procesar datos"},
+    {"command":"versiones", "description":"Muestra las actualizaciones que me han hecho"}
 ]
-BOT_COMMANDS_SESION= [
-    {"command":"disponibilidad", "description":"Mostrar mi disponibilidad"},
-    {"command":"saldo_haberes","description":"Resumen de mis haberes"},
-    {"command":"saldo_prestamos","description":"Resumen de mis prestamos"},
-    {"command":"pago","description":"Informar pago"},
-    {"command":"regresar", "description":"Menu Anterior"},
-    # {"command":"progreso", "description":"Probar barra de progreso"},
-    # {"command":"responderbien", "description":"Probar datos fijos y respuesta buena json"},
-    # {"command":"respondermal", "description":"Probar datos fijos y respuesta errado json"},
-    # {"command":"ocr", "description":"Probar ocr"},
-    # {"command":"procesar_imagen", "description":"Probar obtener images y procesar datos"},
-]
+# BOT_COMMANDS_ADMIN= [
+#     {"command":"datospruebas", "description":"Muestra datos para pruebas"},
+#     {"command":"progreso", "description":"Probar barra de progreso"},
+#     {"command":"responderbien", "description":"Probar datos fijos y respuesta buena json"},
+#     {"command":"respondermal", "description":"Probar datos fijos y respuesta errado json"},
+#     {"command":"enviomasivo", "description":"Enviar mensaje masivo"},
+#     {"command":"estadisticas", "description":"Obtener estadisticas"},
+#     # {"command":"ocr", "description":"Probar ocr"},
+#     # {"command":"procesar_imagen", "description":"Probar obtener images y procesar datos"},
+# ]
+# BOT_COMMANDS_SESION= [
+#     {"command":"disponibilidad", "description":"Mostrar mi disponibilidad"},
+#     {"command":"saldo_haberes","description":"Resumen de mis haberes"},
+#     {"command":"saldo_prestamos","description":"Resumen de mis prestamos"},
+#     {"command":"pago","description":"Informar pago"},
+#     {"command":"regresar", "description":"Menu Anterior"},
+#     # {"command":"progreso", "description":"Probar barra de progreso"},
+#     # {"command":"responderbien", "description":"Probar datos fijos y respuesta buena json"},
+#     # {"command":"respondermal", "description":"Probar datos fijos y respuesta errado json"},
+#     # {"command":"ocr", "description":"Probar ocr"},
+#     # {"command":"procesar_imagen", "description":"Probar obtener images y procesar datos"},
+# ]
+ADMINISTRADORES = []
 # txt_pregunta_cedula = "Cuál es su número de cédula"
 # txt_pregunta_codigo = "Cuál es el código de asociado"
 atxt_pregunta_cedula = [
@@ -180,6 +185,16 @@ historial=[
         'fecha'     : '2024/04/27',
         'nota'      : 'colocada funcion temporal /datospruebas, unificado mensaje cierre, correccion en api nombre, reimpresion de botones (desaparecen en iphone) '
     },
+    {
+        'version'   : "1.3.2",
+        'fecha'     : '2024/05/01',
+        'nota'      : 'colocada funcion para administracion'
+    },
+    {
+        'version'   : "1.4.0",
+        'fecha'     : '2024/05/09',
+        'nota'      : 'algunas funciones pasadas a lista de administradores'
+    },
 ] 
 
 nversiones = len(historial)-1
@@ -219,7 +234,6 @@ version_bot = __version__
 
 def textoAlAzar(texto):
     azar = random.randint(0,len(texto)-1)
-    # print(texto[azar])
     return texto[azar]
 
 def textoazar(msg):
@@ -251,9 +265,13 @@ def saludar():
     return saludo
 
 def write_json(data, file_name='response.json'):
-    with open(file_name, 'a') as f:
-        json.dump(data, f, indent=4)
-        # , ensure_ascii=False)
+    try:
+        with open(file_name, 'a') as f:
+            json.dump(data, f, indent=4)
+            # , ensure_ascii=False)
+    except Exception as error:
+        print('error en archivo json',error)
+        bitacora('error en archivo json')
     bitacora('escribi en archivo json ')
 
 # 
@@ -274,9 +292,13 @@ def deleteWebhook():
         # 'chat_id':chat_id,
         # 'action':mostrar
     }
-    r = requests.post(url, json=payload)
-    bitacora('deleteWebhook api')
-    bitacora(r)
+    try:
+        r = requests.post(url, json=payload)
+        bitacora(r)
+    except Exception as error:
+        bitacora('deleteWebhook api')
+        print('error en deleteWebhook',error)
+    bitacora('escribi en archivo json ')
     return r
 
 def setWebhook(url):
@@ -285,9 +307,13 @@ def setWebhook(url):
         # 'url':url,
         # 'action':mostrar
     }
-    r = requests.post(url) #, json=payload)
-    print ('setWebhook',url)
-    bitacora('setWebhook api '+url)
+    try:
+        r = requests.post(url) #, json=payload)
+        print ('setWebhook',url)
+        bitacora('setWebhook api '+url)
+    except Exception as error:
+        bitacora('setWebhook api '+url)
+        print('error en setWebhook',error)
     bitacora(r)
     return r
 
@@ -346,7 +372,6 @@ def sendChatAction(chat_id, tipo:'texto'):
         'action':mostrar
     }
     r = requests.post(url, json=payload)
-    # bitacora('sendChatAction '+mostrar)
     return r
 
 
@@ -392,9 +417,12 @@ def definir_comandos(BOT_COMMANDS):
     # }
     # r = requests.post(url, json=payload)
     send_text = url + '?commands=' + str(json.dumps(BOT_COMMANDS) ) 
-    bitacora(send_text)
-    r  = requests.get(send_text)
-    bitacora('sali definir_comandos')
+    try:
+        bitacora(send_text)
+        r  = requests.get(send_text)
+        bitacora('sali definir_comandos')
+    except Exception as error:
+        bitacora('error definir_comandos')
     return r
 
 def deudapendiente(msg):
@@ -435,7 +463,7 @@ def deudapendiente(msg):
                 saldo      = float(prestamo['monto'])
                 saldo      = "{:,.3f}".format(saldo)
                 cuento += (str(van)+')'+prestamo['prestamo'] + ' '+
-                prestamo['fallo']+' '+prestamo['suspendido'] + 
+                prestamo['fallo']+' '+prestamo['fsuspendido'] + 
                 ' <b>'+saldo+ '</b>\n')
             bot.send_message(cid, cuento, parse_mode='html')
 
@@ -487,12 +515,12 @@ def saldoprestamos(msg):
         afectan = respuesta['afectan']
         van = 0
         if len(afectan) > 0:
-            cuento = '<b>Saldos que <u>Afectan</u> Disponibilidad</b>'
+            # cuento = ''
+            cuento = '<b>Saldos que <u>Afectan</u> Disponibilidad</b>\n'
             sendChatAction(cid,'texto')
-            bot.send_message(cid, cuento, parse_mode='html')
-            time.sleep(1)
+            # bot.send_message(cid, cuento, parse_mode='html')
+            # time.sleep(1)
             sendChatAction(cid,'texto')
-            cuento = ''
             for prestamo in afectan:
                 van = van + 1
                 saldo      = float(prestamo['saldo'])
@@ -506,12 +534,12 @@ def saldoprestamos(msg):
         van = 0
         afectan = respuesta['noafectan']
         if len(afectan) > 0:
-            cuento = '<b>Saldos que <u>No Afectan</u> Disponibilidad</b>'
+            # cuento = ''
+            cuento = '<b>Saldos que <u>No Afectan</u> Disponibilidad</b>\n'
             sendChatAction(cid,'texto')
-            bot.send_message(cid, cuento, parse_mode='html')
-            time.sleep(1)
+            # bot.send_message(cid, cuento, parse_mode='html')
+            # time.sleep(1)
             sendChatAction(cid,'texto')
-            cuento = ''
             for prestamo in afectan:
                 van = van + 1
                 saldo      = float(prestamo['saldo'])
@@ -557,9 +585,13 @@ def datospruebas(msg):
     chat_id=obtener_chat_id(msg)
     sendChatAction(chat_id,'texto')
     cuento = ''
-    for version in datos_pruebas:
-        cuento += version['cedula'] +' ' + version['codigo']+' =>' + version['nota']+'\n'
+    if usuarioAdministrador(chat_id):
+        for version in datos_pruebas:
+            cuento += version['cedula'] +' ' + version['codigo']+' =>' + version['nota']+'\n'
+    else:
+        cuento = 'Lo siento... \n\n\nNo se encuentra en la lista de administradores para esta funcion'
     bot.send_message(chat_id, cuento, parse_mode='html')
+
 
 def versiones(msg):
     chat_id=obtener_chat_id(msg)
@@ -765,7 +797,6 @@ def confirmar_datos(message):
         bot.send_message(chat_id, 'Lo siento... \nAlgo malo ha ocurrido con los datos, <b>revise sus datos e intente nuevamente</b>',parse_mode='html')
     bitacora('sali confirmar_datos ')
 
-
 def preguntar_codigo(message):
     bitacora('entre preguntar_codigo ')
     # print(message)
@@ -819,51 +850,53 @@ def saldohaberes(msg):
     bitacora('entre saldohaberes ')
     sendChatAction(cid,'texto')
     # mid = barra_progreso(0,'Estableciendo conexion a datos',cid)
-    respuesta, resultado, mid = consultarDatos(msg, cid, 0)
-    # print('respues en saldohaberes ',respuesta, resultado)
+    try:
+        respuesta, resultado, mid = consultarDatos(msg, cid, 0)
+        # print('respues en saldohaberes ',respuesta, resultado)
 
-    if respuesta =='Ok':
-        respuesta=resultado
-        sendChatAction(cid,'texto')
-        barra_progreso(numAzar(45,55),'Procesando informacion',cid, mid)
-        time.sleep(0.5)
-        sendChatAction(cid,'texto')
-        barra_progreso(numAzar(85,95),'Entregando informacion',cid, mid)
-        time.sleep(0.5)
-        barra_progreso(100,'Preparando la entrega de informacion',cid, mid)
-        socio = respuesta['datos']
-        # cuento = "Estimado(a) Socio(a):<b><span class='tg-spoiler'>"+socio['nombre']+'</span><b>\n'
-        asocio      = float(socio['hab_f_prof'])
-        apatronal   = float(socio['hab_f_empr'])
-        reserva     = float(respuesta['reserva'])
-        asocio      = "{:,.3f}".format(asocio)
-        apatronal   = "{:,.3f}".format(apatronal)
-        reserva     = "{:,.3f}".format(reserva)
-        cuento = "Estimado(a) Socio(a):<b>"+socio['nombre']+'</b>\n'
-        cuento += 'Datos actualizados el <b>'+respuesta['actualizacion']['fechaactdatos']+'</b>\n'
-        cuento += 'Ahorros Socio al '+socio['uas']+': <b>'+asocio+'</b>\n'
-        cuento += 'Aporte Patronal al '+socio['uap']+': <b>'+apatronal+'</b>\n'
-        cuento += '<u>Menos</u> Reserva Legal <b>'+reserva+'</b>\n'
+        if respuesta =='Ok':
+            respuesta=resultado
+            sendChatAction(cid,'texto')
+            barra_progreso(numAzar(45,55),'Procesando informacion',cid, mid)
+            time.sleep(0.5)
+            sendChatAction(cid,'texto')
+            barra_progreso(numAzar(85,95),'Entregando informacion',cid, mid)
+            time.sleep(0.5)
+            barra_progreso(100,'Preparando la entrega de informacion',cid, mid)
+            socio = respuesta['datos']
+            # cuento = "Estimado(a) Socio(a):<b><span class='tg-spoiler'>"+socio['nombre']+'</span><b>\n'
+            asocio      = float(socio['hab_f_prof'])
+            apatronal   = float(socio['hab_f_empr'])
+            reserva     = float(respuesta['reserva'])
+            asocio      = "{:,.3f}".format(asocio)
+            apatronal   = "{:,.3f}".format(apatronal)
+            reserva     = "{:,.3f}".format(reserva)
+            cuento = "Estimado(a) Socio(a):<b>"+socio['nombre']+'</b>\n'
+            cuento += 'Datos actualizados el <b>'+respuesta['actualizacion']['fechaactdatos']+'</b>\n'
+            cuento += 'Ahorros Socio al '+socio['uas']+': <b>'+asocio+'</b>\n'
+            cuento += 'Aporte Patronal al '+socio['uap']+': <b>'+apatronal+'</b>\n'
+            cuento += '<u>Menos</u> Reserva Legal <b>'+reserva+'</b>\n'
 
-        cuento += saldoPendiente(respuesta['tsuspension'])
+            cuento += saldoPendiente(respuesta['tsuspension'])
 
-        # cuento += '\nPara mayor informacion puede consultar el Estado de Cuenta en '
-        # cuento += '<a href="https://estadodecuenta.cappoucla.org.ve">Estado de Cuenta</a>\n'
-        # cuento += '\nIgualmente lo invitamos a visitar regularmente nuestro sitio web '
-        # cuento += '<a href="'+SITIOWEB+'">'+SITIOWEB+'</a>\n'
-        sendChatAction(cid,'texto')
-        bot.send_message(cid, cuento, parse_mode='html')
-        cuento_cierre(msg, '', respuesta['tsuspension'])
-    else:
-        barra_progreso(100,'Preparando entrega de informacion',cid, mid)
-        markup = ReplyKeyboardRemove()
-        bot.send_message(cid, '<b>No he podido obtener la informacion solicitada, revise los datos e intente de nuevo</b>', parse_mode='html')
-        bot.send_message(cid, 
-                '<b>Si no esta afiliado a la institucion puede visitar </b><a href="'+SITIOWEB+'">'+SITIOWEB+'</a> para su inscripcion', 
-                parse_mode='html', 
-                reply_markup=markup)
-    bitacora('sali disponibilidad ')
-
+            # cuento += '\nPara mayor informacion puede consultar el Estado de Cuenta en '
+            # cuento += '<a href="https://estadodecuenta.cappoucla.org.ve">Estado de Cuenta</a>\n'
+            # cuento += '\nIgualmente lo invitamos a visitar regularmente nuestro sitio web '
+            # cuento += '<a href="'+SITIOWEB+'">'+SITIOWEB+'</a>\n'
+            sendChatAction(cid,'texto')
+            bot.send_message(cid, cuento, parse_mode='html')
+            cuento_cierre(msg, '', respuesta['tsuspension'])
+        else:
+            barra_progreso(100,'Preparando entrega de informacion',cid, mid)
+            markup = ReplyKeyboardRemove()
+            bot.send_message(cid, '<b>No he podido obtener la informacion solicitada, revise los datos e intente de nuevo</b>', parse_mode='html')
+            bot.send_message(cid, 
+                    '<b>Si no esta afiliado a la institucion puede visitar </b><a href="'+SITIOWEB+'">'+SITIOWEB+'</a> para su inscripcion', 
+                    parse_mode='html', 
+                    reply_markup=markup)
+        bitacora('sali disponibilidad ')
+    except Exception as error:
+        bitacora('error saldohaberes')
 
 def disponibilidad(msg):
     # version anterior 
@@ -897,40 +930,45 @@ def clave_en_lista(msg, buscar):
 
 def parse_message(message):
     bitacora('entre parse_message ')
-    chat_id = message['message']['chat']['id']
-    comando = respuesta = mensaje = False
-    if ('text' in message['message']):
-        txt = message['message']['text']
-        txt = txt.lower()
+    try:
+        chat_id = message['message']['chat']['id']
+        comando = respuesta = mensaje = False
+        if ('text' in message['message']):
+            txt = message['message']['text']
+            txt = txt.lower()
 
-        if (clave_en_lista(message['message'],'entities')):
-            if (clave_en_lista(message['message']['entities'][0],'type')):
-                # if (clave_en_lista(message['message']['entities'][0]['type'],'bot_command')):
-                comando = True
-                txt = txt.strip()
-                if txt and (txt.startswith('/')):
-                    tamano = len(txt)
-                    txt = txt[1:tamano]
-                print ('es un comando ')
-        else:
-            if (clave_en_lista(message['message'],'reply_to_message')):
-                print('es una respuesta')
-                respuesta = True
+            if (clave_en_lista(message['message'],'entities')):
+                if (clave_en_lista(message['message']['entities'][0],'type')):
+                    # if (clave_en_lista(message['message']['entities'][0]['type'],'bot_command')):
+                    comando = True
+                    txt = txt.strip()
+                    if txt and (txt.startswith('/')):
+                        tamano = len(txt)
+                        txt = txt[1:tamano]
+                    print ('es un comando ')
             else:
-                mensaje = True
-                print('mensaje normal')
+                if (clave_en_lista(message['message'],'reply_to_message')):
+                    print('es una respuesta')
+                    respuesta = True
+                else:
+                    mensaje = True
+                    print('mensaje normal')
 
-        print ('resultado comando ',comando, 'respuesta ', respuesta, ' mensaje ',mensaje)
-        bitacora('sali parse_message ')
+            print ('resultado comando ',comando, 'respuesta ', respuesta, ' mensaje ',mensaje)
+            bitacora('sali parse_message ')
+            return chat_id, txt, comando,respuesta, mensaje 
+        elif ('photo' in message['message']):
+            comando = True
+            mensaje = False
+            txt = 'procesar_imagen' 
+            print('recibi una imagen')
+
+        print('sali de parse_message')
         return chat_id, txt, comando,respuesta, mensaje 
-    elif ('photo' in message['message']):
-        comando = True
-        mensaje = False
-        txt = 'procesar_imagen' 
-        print('recibi una imagen')
+    except Exception as error:
+        bitacora('error parse_message')
+        return False, False, False
 
-    print('sali de parse_message')
-    return chat_id, txt, comando,respuesta, mensaje 
 
     '''
     if "/launches" in message_text:
@@ -961,18 +999,36 @@ def parse_message(message):
     '''
 
 def obtener_chat_id(msg):
-    return msg["message"]["chat"]["id"]
+    try:
+        return msg["message"]["chat"]["id"]
+    except Exception as error:
+        bitacora('error obtener_chat_id')
 
 def obtener_msg_id(msg):
-    return msg["message"]["reply_to_message"]["message_id"]
-    # .encode('utf8')
+    try:
+        return msg["message"]["reply_to_message"]["message_id"]
+        # .encode('utf8')
+    except Exception as error:
+        bitacora('error obtener_msg_id')
+
+def obtener_msg_id_nr(msg):
+    try:
+        return msg["message"]["message_id"]
+    except Exception as error:
+        bitacora('error obtener_msg_id_nr')
 
 def obtener_chat_text(msg):
-    return msg["message"]["text"]
-    # .encode('utf8')
+    try:
+        return msg["message"]["text"]
+        # .encode('utf8')
+    except Exception as error:
+        bitacora('error chat_text')
 
 def obtener_pregunta_hecha(msg):
-    return msg["message"]["reply_to_message"]['text']
+    try:
+        return msg["message"]["reply_to_message"]['text']
+    except Exception as error:
+        bitacora('error obtener_pregunta_hecha')
 
 def obtener_chat_foto(msg):
     maximo = (1024*5)*1024
@@ -1074,13 +1130,14 @@ def registrar_peticion(msg):
         post_response_json = post_response.json()
         bitacora('respuesta api '+url)
         write_json(post_response, 'telegram_request.json')
+        bitacora('sali registrar_peticion')
         return post_response_json
     except Exception as error:
         print('error en registrar_peticion',error)
+        bitacora('error en registrar_peticion')
         return {
             "respuesta": "NoOk"
         }
-    bitacora('sali registrar_peticion')
 
 
 def solicitar_informacion(cedula, codigo, cid, mid, comando):
@@ -1099,14 +1156,15 @@ def solicitar_informacion(cedula, codigo, cid, mid, comando):
         post_response_json = post_response.json()
         # print(post_response_json)
         return post_response_json
+        bitacora('sali solicitar_informacion  ')
     except Exception as error:
         print('error en solicitar_informacion',error)
+        bitacora('error en solicitar_informacion')
         return {
             "respuesta": "NoOk"
         }
-    bitacora('sali solicitar_informacion  ')
 
-def saldoPendiente(saldo):
+def saldoPendiente(saldo=0):
     if (float(saldo) > 0):
         tsuspension     = float(saldo)
         tsuspension     = "{:,.3f}".format(tsuspension)
@@ -1169,15 +1227,24 @@ def responder_disponibilidad(msg):
 
 def responderbien(msg):
     cid=obtener_chat_id(msg)
-    datos_consulta['cedula']='09377388'
-    datos_consulta['codigo']='00914'
-    responder_disponibilidad(cid)
+    if usuarioAdministrador(chat_id):
+        datos_consulta['cedula']='09377388'
+        datos_consulta['codigo']='00914'
+        responder_disponibilidad(cid)
+    else:
+        cuento = 'Lo siento... \n\n\nNo se encuentra en la lista de administradores para esta funcion'
+        bot.send_message(chat_id, cuento, parse_mode='html')
+
 
 def respondermal(msg):
     cid=obtener_chat_id(msg)
-    datos_consulta['cedula']='0937738'
-    datos_consulta['codigo']='00914'
-    responder_disponibilidad(cid)
+    if usuarioAdministrador(chat_id):
+        datos_consulta['cedula']='0937738'
+        datos_consulta['codigo']='00914'
+        responder_disponibilidad(cid)
+    else:
+        cuento = 'Lo siento... \n\n\nNo se encuentra en la lista de administradores para esta funcion'
+        bot.send_message(chat_id, cuento, parse_mode='html')
 
 def identificarme(msg):
     chat_id=obtener_chat_id(msg)
@@ -1266,13 +1333,16 @@ def procesar_respuesta(msg):
                 datos_consulta['codigo']=texto
                 datos_consulta['id_msg_codigo']=obtener_msg_id(msg)
                 confirmar_datos(msg)
+        if pregunta_hecha.lower() == 'mensaje a enviar':
+            print('enviar masivo')
+        bitacora('sali procesar_respuesta  ')
         # if pregunta_hecha.lower() == txt_si_disponibilidad.lower():
         #     responder_disponibilidad(msg)
     except Exception as error:
         print('error en procesar_respuesta',error)
+        bitacora('error en procesar_respuesta')
         bot.send_message(chat_id, 'Escribiste algo que no he entendido que quieres decir con <b><u>'+txt+'</u></b>\n Puedes utilizar <b>/</b> para ver los comandos o para obtener <b>/ayuda</b> ',parse_mode='html')
         iniciar()
-    bitacora('sali procesar_respuesta  ')
 
 
     # bot.send_message(obtener_chat_id(msg),'estoy en procesar_respuesta')
@@ -1300,21 +1370,24 @@ def recibir_msg(app):
         # if SERVER_LOCAL==False:
         # try:
     # if not SERVER_LOCAL:
-    print('desactivando Webhook')
-    res = deleteWebhook()
-    print(res)
-    # if res['ok']:
-    time.sleep(1)
-    res = setWebhook(servidor)
-    # if res['ok']:
-    id = os.getenv('MI_ID_MOVISTAR', 'No definido SERVER_LOCAL')
-    bot.send_message(id,'asignado Webhook '+servidor)
+    try:
+        print('desactivando Webhook')
+        res = deleteWebhook()
+        print(res)
+        # if res['ok']:
+        time.sleep(1)
+        res = setWebhook(servidor)
+        # if res['ok']:
+        id = os.getenv('MI_ID_MOVISTAR', 'No definido SERVER_LOCAL')
+        bot.send_message(id,'asignado Webhook '+servidor)
 
         #     return True
         # except Exception as error:
         #     print('fallo inicio configuracion bot ',error)
         #     return False
-    bitacora('sali recibir_msg')
+        bitacora('sali recibir_msg')
+    except Exception as error:
+        bitacora('error recibir_msg')
 
 
 
@@ -1461,6 +1534,60 @@ def procesar_imagen(msg):
         print('no pude procesar_imagen',chat_id,error)
     bitacora('sali procesar_imagen')
 
+def cargar_administradores():
+    bitacora(os.getenv('LIST_ADMIN'))
+    lista = (os.getenv('LIST_ADMIN').split(','))
+    for x in lista:
+        ADMINISTRADORES.append(x)
+    return ADMINISTRADORES
+
+def usuarioAdministrador(chat_id):
+    ADMINISTRADORES = cargar_administradores()
+    # bitacora((chat_id), ADMINISTRADORES)
+    bitacora('Verdad ' if str(chat_id) in ADMINISTRADORES else 'Falso')
+    return str(chat_id) in ADMINISTRADORES
+
+def mensajemasivo(msg):
+    bitacora('entre mensajeUsuarios')
+    try:
+        chat_id=obtener_chat_id(msg)
+        if usuarioAdministrador(chat_id):
+            bot.send_message(chat_id, 'es un administrador')
+            sendChatAction(chat_id,'texto')
+            botones = ReplyKeyboardRemove()
+            # global txt_pregunta_cedula = textoAlAzar(txt_pregunta_cedula)
+            # global txt_pregunta_codigo = textoAlAzar(txt_pregunta_codigo)
+            # respuesta = bot.send_message(chat_id, '',reply_markup=botones)
+            markup = ForceReply()
+            respuesta = bot.send_message(
+                chat_id, 
+                'Mensaje a enviar',reply_markup = markup, 
+                parse_mode='html')
+            # print(respuesta)
+            # bot.register_next_step_handler(respuesta, preguntar_codigo)
+        else:
+            bot.send_message(chat_id, 'no es un administrador')
+    except Exception as error:
+        print('no pude mensajeUsuarios',chat_id,error)
+    bitacora('sali mensajeUsuarios')
+
+def reiniciar(msg):
+    try:
+        chat_id=obtener_chat_id(msg)
+        if usuarioAdministrador(chat_id):
+            bot.delete_message(chat_id, obtener_msg_id_nr(msg))
+            bot.send_message(chat_id, 'intento reiniciar servicio')
+            bitacora('reiniciando servicio en 3 segundos')
+            time.sleep(3)
+            sys.stdout.flush()
+            # os.execv(sys.argv[0], sys.argv)
+            os.execv(sys.executable, [sys.executable] + sys.argv)
+            bitacora('reiniciando servicio')
+        else:
+            bot.send_message(chat_id, 'no es un usuario administrador')
+    except Exception as error:
+        print('no pude reiniciar',chat_id, error)
+    bitacora('sali reiniciar')
 
 def main():
     pass
@@ -1530,16 +1657,18 @@ def get_status():
 def not_found(error):
     return make_response(jsonify({'error': 'Not found'}), 404)
 
-
-
 if __name__ == '__main__':
+    # cargar_administradores()
+    '''
     # NUM_HILOS = 3
 
     # for num_hilo in range(NUM_HILOS):
     #     hilo = threading.Thread(name='hilo%s' %num_hilo, 
     #                             target=contar)    
     #     hilo.start()    
+    '''
     print('Iniciando Bot')
+    '''
     # hilo = threading.Thread(name='Thread_bot',target=recibir_msg(app))
     # print(hilo)
     # hilo.start()
@@ -1550,6 +1679,7 @@ if __name__ == '__main__':
     # # serve(servidor, host='0.0.0.0')
     # txt_pregunta_cedula = textoAlAzar(atxt_pregunta_cedula)
     # txt_pregunta_codigo = textoAlAzar(atxt_pregunta_codigo)
+    '''
     print('las preguntas ',txt_pregunta_cedula, txt_pregunta_codigo)
     bitacora('iniciando bot, mensaje a '+TELEGRAM_API_TOKEN)
     recibir_msg(app)

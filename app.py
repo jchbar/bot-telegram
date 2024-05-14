@@ -93,7 +93,8 @@ BOT_COMMANDS= [
     {"command":"iniciar", "description":"Iniciar el Bot"},
     {"command":"identificarme","description":"Iniciar sesion de datos"},
     {"command":"ayuda", "description":"Muestra los comandos a utilizar"},
-    {"command":"versiones", "description":"Muestra las actualizaciones que me han hecho"}
+    {"command":"versiones", "description":"Muestra las actualizaciones que me han hecho"},
+    {"command":"administrador", "description":"Funciones para el administrador"},
 ]
 # BOT_COMMANDS_ADMIN= [
 #     {"command":"datospruebas", "description":"Muestra datos para pruebas"},
@@ -282,8 +283,8 @@ def write_json(data, file_name='response.json'):
 # https://api.telegram.org/bot6897485406:AAE116uTF5894G5aN0wJZ8UmfHIwRLbAnFc/
 # https://pytba.readthedocs.io/en/latest/
 # https://api.telegram.org/bot6379635079:AAHjOX9SuXHQrn-gmYQmkgBECAvG8lQ1COc/deleteWebhook
-# https://api.telegram.org/bot6379635079:AAHjOX9SuXHQrn-gmYQmkgBECAvG8lQ1COc/setWebhook?url=https://badly-exact-skink.ngrok-free.app
 # https://api.telegram.org/bot6379635079:AAHjOX9SuXHQrn-gmYQmkgBECAvG8lQ1COc/setWebhook?url=https://pruebaspython.heros.com.ve
+# https://api.telegram.org/bot6379635079:AAHjOX9SuXHQrn-gmYQmkgBECAvG8lQ1COc/setWebhook?url=https://badly-exact-skink.ngrok-free.app
 # 
 
 def deleteWebhook():
@@ -580,6 +581,36 @@ def saldoprestamos(msg):
                 parse_mode='html', 
                 reply_markup=markup)
     bitacora('sali saldoprestamos ')
+
+def administrador(msg):
+    chat_id=obtener_chat_id(msg)
+    sendChatAction(chat_id,'texto')
+    cuento = ''
+    if usuarioAdministrador(chat_id):
+        sendChatAction(chat_id,'texto')
+        arreglo_btn_admin = []
+        arreglo_btn_admin.append("/datospruebas")
+        arreglo_btn_admin.append("/responderbien")
+        arreglo_btn_admin.append("/respondermal")
+        arreglo_btn_admin.append("/progreso")
+        arreglo_btn_admin.append("/estadisticas")
+        arreglo_btn_admin.append("/mensajemasivo")
+
+        # botones = ReplyKeyboardMarkup(
+        #     one_time_keyboard=True, 
+        #     input_field_placeholder="Puede utilizar los Botones o el menu para seleccionar", 
+        #     resize_keyboard=True,
+        #     row_width=3)
+        for i in arreglo_btn_admin:
+            # botones.add(i)
+            cuento = cuento +  i + '\n' 
+        # cuento = '\nOpciones disponibles '
+        msg = bot.send_message(chat_id, cuento, parse_mode='html')
+        # msg = bot.send_message(chat_id, cuento, reply_markup=botones, parse_mode='html')
+    else: 
+        msg = bot.send_message(chat_id, 'No tiene permiso para esta opcion', parse_mode='html')
+
+
 
 def datospruebas(msg):
     chat_id=obtener_chat_id(msg)
@@ -1100,8 +1131,8 @@ def numAzar(inicio=0, fin=100):
     return azar
 
 
-def progreso(cid):
-    # cid = obtener_chat_id(msg)
+def progreso(msg):
+    cid = obtener_chat_id(msg)
     bitacora('entre progreso  ')
     mid = barra_progreso(0,'iniciando',cid)
     time.sleep(2)
@@ -1227,10 +1258,10 @@ def responder_disponibilidad(msg):
 
 def responderbien(msg):
     cid=obtener_chat_id(msg)
-    if usuarioAdministrador(chat_id):
+    if usuarioAdministrador(cid):
         datos_consulta['cedula']='09377388'
         datos_consulta['codigo']='00914'
-        responder_disponibilidad(cid)
+        responder_disponibilidad(msg)
     else:
         cuento = 'Lo siento... \n\n\nNo se encuentra en la lista de administradores para esta funcion'
         bot.send_message(chat_id, cuento, parse_mode='html')
@@ -1238,10 +1269,10 @@ def responderbien(msg):
 
 def respondermal(msg):
     cid=obtener_chat_id(msg)
-    if usuarioAdministrador(chat_id):
+    if usuarioAdministrador(cid):
         datos_consulta['cedula']='0937738'
         datos_consulta['codigo']='00914'
-        responder_disponibilidad(cid)
+        responder_disponibilidad(msg)
     else:
         cuento = 'Lo siento... \n\n\nNo se encuentra en la lista de administradores para esta funcion'
         bot.send_message(chat_id, cuento, parse_mode='html')
@@ -1334,7 +1365,7 @@ def procesar_respuesta(msg):
                 datos_consulta['id_msg_codigo']=obtener_msg_id(msg)
                 confirmar_datos(msg)
         if pregunta_hecha.lower() == 'mensaje a enviar':
-            print('enviar masivo')
+            enviarMsgMasivo(msg)
         bitacora('sali procesar_respuesta  ')
         # if pregunta_hecha.lower() == txt_si_disponibilidad.lower():
         #     responder_disponibilidad(msg)
@@ -1404,6 +1435,19 @@ def recibir_msg(app):
 def evaluar_comandos(msg, txt):
     # print('arreglo_botones evaluar_comandos')
     # print(arreglo_botones)
+    # cid=obtener_chat_id(msg)
+    # if usuarioAdministrador(cid):
+    #     # botones de admin
+    #     print('arreglo_btn_admin ',arreglo_btn_admin)
+    #     txt2=txt.replace(" ","")
+    #     txt3=txt2.lower()
+    #     for i in arreglo_btn_admin:
+    #         # print(i)
+    #         i2=i.replace(" ","")
+    #         i3=i2.lower()
+    #         if (i3 == txt3):
+    #             return True, txt3
+
     if (len(arreglo_botones)) == 0:
         bot.send_message(obtener_chat_id(msg), 'No se han podido definir los botones para ofrecerle informacion, se enviara al inicio para indicar sus datos nuevamente ')
         # iniciar(msg)
@@ -1413,12 +1457,14 @@ def evaluar_comandos(msg, txt):
     txt2=txt.replace(" ","")
     txt3=txt2.lower()
     # print('txt3',txt3)
+    #  para los botones normales 
     for i in arreglo_botones:
         # print(i)
         i2=i.replace(" ","")
         i3=i2.lower()
         if (i3 == txt3):
             return True, txt3
+
     return False, txt
 
 def print_properties(value, parent):
@@ -1471,7 +1517,10 @@ def index():
                 bot.send_message(chat_id, 'Seleccionaste <i>'+txt+'</i>', parse_mode='html')
                 # getattr(self, txt)()
                 # globals()[disponibilidad]
-                eval(txt)(msg)
+                try:
+                    eval(txt)(msg)
+                except Exception as error:
+                    bot.send_message(chat_id, 'No he entendido que quieres decir con <b><u>'+txt+'</u></b>\n No fue un comando valido. Puedes utilizar la "botonera" para ver los comandos ', parse_mode='html')
                 # print('regrese de la funcion')
             else:
                 if es_respuesta:
@@ -1482,7 +1531,10 @@ def index():
                     evaluado, txt = evaluar_comandos(msg, txt)
                     if evaluado:
                         print('consegui evaluar '+txt)
-                        eval(txt)(msg)
+                        try:
+                            eval(txt)(msg)
+                        except Exception as error:
+                            bot.send_message(chat_id, 'No he entendido que quieres decir con <b><u>'+txt+'</u></b>\n No fue un comando valido. Puedes utilizar la "botonera" para ver los comandos ', parse_mode='html')
                     else:
                         bot.send_message(chat_id, 'No he entendido que quieres decir con <b><u>'+txt+'</u></b>\n No fue un comando valido. Puedes utilizar la "botonera" para ver los comandos ', parse_mode='html')
                 else:
@@ -1544,8 +1596,18 @@ def cargar_administradores():
 def usuarioAdministrador(chat_id):
     ADMINISTRADORES = cargar_administradores()
     # bitacora((chat_id), ADMINISTRADORES)
-    bitacora('Verdad ' if str(chat_id) in ADMINISTRADORES else 'Falso')
+    # bitacora('Verdad ' if str(chat_id) in ADMINISTRADORES else 'Falso')
     return str(chat_id) in ADMINISTRADORES
+
+def enviarMsgMasivo(msg):
+    chat_id=obtener_chat_id(msg)
+    if usuarioAdministrador(chat_id):
+        sendChatAction(chat_id,'texto')
+        respuesta = bot.send_message(
+            chat_id, 
+            msg,
+            parse_mode='html')
+
 
 def mensajemasivo(msg):
     bitacora('entre mensajeUsuarios')
@@ -1563,8 +1625,8 @@ def mensajemasivo(msg):
                 chat_id, 
                 'Mensaje a enviar',reply_markup = markup, 
                 parse_mode='html')
-            # print(respuesta)
-            # bot.register_next_step_handler(respuesta, preguntar_codigo)
+            print(respuesta)
+            bot.register_next_step_handler(respuesta, enviarMsgMasivo)
         else:
             bot.send_message(chat_id, 'no es un administrador')
     except Exception as error:

@@ -13,6 +13,9 @@ pip install py-mon
 pip install load_dotenv
 pip install pytesseract
 
+pip install numpy
+pip install matplotlib
+
     pymon app.py
 '''
 
@@ -47,6 +50,9 @@ import pytesseract
 from PIL import Image
 from dotenv import load_dotenv
 
+import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
 
 # bot = telebot.TeleBot(TELEGRAM_API_TOKEN)
 app = Flask(__name__)
@@ -94,6 +100,7 @@ BOT_COMMANDS= [
     {"command":"identificarme","description":"Iniciar sesion de datos"},
     {"command":"ayuda", "description":"Muestra los comandos a utilizar"},
     {"command":"versiones", "description":"Muestra las actualizaciones que me han hecho"},
+    {"command":"estadisticas", "description":"Muestra las estadisticas de uso"},
     {"command":"administrador", "description":"Funciones para el administrador"},
 ]
 # BOT_COMMANDS_ADMIN= [
@@ -119,6 +126,7 @@ BOT_COMMANDS= [
 #     # {"command":"procesar_imagen", "description":"Probar obtener images y procesar datos"},
 # ]
 ADMINISTRADORES = []
+AUTORIZADOS = []
 # txt_pregunta_cedula = "Cuál es su número de cédula"
 # txt_pregunta_codigo = "Cuál es el código de asociado"
 atxt_pregunta_cedula = [
@@ -195,6 +203,16 @@ historial=[
         'version'   : "1.4.0",
         'fecha'     : '2024/05/09',
         'nota'      : 'algunas funciones pasadas a lista de administradores'
+    },
+    {
+        'version'   : "1.4.1",
+        'fecha'     : '2024/05/15',
+        'nota'      : 'cambio de items de administradores'
+    },
+    {
+        'version'   : "1.5.0",
+        'fecha'     : '2024/05/19',
+        'nota'      : 'incluida seccion de estadisticas para autorizados'
     },
 ] 
 
@@ -609,6 +627,136 @@ def administrador(msg):
         # msg = bot.send_message(chat_id, cuento, reply_markup=botones, parse_mode='html')
     else: 
         msg = bot.send_message(chat_id, 'No tiene permiso para esta opcion', parse_mode='html')
+
+def colorRandom():
+    number_of_colors = 30
+    color = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)])
+        for i in range(number_of_colors)]
+    return color
+
+
+def enviarGrafico(msg, datos, archivo='hoy',uso='Uso de hoy', colores=colorRandom()):
+    chat_id=obtener_chat_id(msg)
+    sendChatAction(chat_id,'documento')
+    # sendChatAction(chat_id,'texto')
+    # print('datos para grafico')
+    # print(datos)
+
+    # matplotlib.rcParams.update({'font.size': 21})
+    # ax = plt.gca()
+
+    # ax2 = ax.twinx()
+    # # for i in range(10):
+    # #     ax.bar(i, np.random.randint(1000))
+    # for i in datos:
+    #     ax.bar(i['ff'], i['cntChatId'])
+
+    # plt.ylabel('Interacciones')
+    # plt.savefig(archivo+".jpg")
+
+    # matplotlib.use('agg')
+
+    # fig, ax = plt.subplots()
+    # fechas = ['apple', 'blueberry', 'cherry', 'orange']
+    # cantidad = [40, 100, 30, 55]
+    # # for i in datos:
+    # #     fechas.append(i['ff'])
+    # #     cantidad.append(i['cntChatId'])
+    # # ax.bar(i['ff'], i['cntChatId'])
+    # bar_labels = ['red', 'blue', '_red', 'orange']
+    # bar_colors = ['tab:red', 'tab:blue', 'tab:red', 'tab:orange']
+
+    # ax.bar(fechas, counts, label=bar_labels, color=bar_colors)
+
+    # ax.set_ylabel('fruit supply')
+    # ax.set_title(uso)
+    # # ax.legend(title='Fruit color')
+
+    # plt.savefig(archivo+".jpg")
+    # # plt.show()
+    fig, ax = plt.subplots()
+
+    fruits = [] 
+    # 'apple', 'blueberry', 'cherry', 'orange']
+    counts = []
+    # 40, 100, 30, 55]
+    bar_labels = []
+    # 'red', 'blue', '_red', 'orange']
+    bar_colors = []
+    # colores = colorRandom()
+    # 'tab:red', 'tab:blue', 'tab:red', 'tab:orange']
+
+    for x, i in enumerate(datos):
+        # print(' contenido de i',i)
+        fruits.append(i['ff'])
+        counts.append(i['cntChatId'])
+        bar_labels.append(i['ff'])
+        bar_colors.append(colores[x])
+    # print('fruits', fruits)
+    # print('counts', counts)
+    # print('bar_colors',bar_colors)
+    ax.bar(fruits, counts, label=bar_labels, color=bar_colors)
+
+    ax.set_ylabel('Interacciones')
+    ax.set_title(uso)
+    # 'Fruit supply by kind and color')
+    # ax.legend(title='Fruit color')
+    plt.savefig(archivo+".jpg")
+
+    foto = open('./'+archivo+'.jpg', 'rb')
+    bot.send_photo(chat_id, foto, uso)
+    time.sleep(0.5)
+    os.remove(archivo+".jpg")
+
+
+
+def estadisticas(msg):
+    chat_id=obtener_chat_id(msg)
+    sendChatAction(chat_id,'texto')
+    cuento = ''
+    try:
+        if (usuarioAdministrador(chat_id) or usuarioAutorizado(chat_id)) :
+            mid = barra_progreso(0,'Estableciendo conexion',chat_id)
+            new_data = {
+                "msg":"nada"
+            }
+            url_post = URL_API+'estadisticas'
+            # print(url_post, new_data)
+            bitacora('voy a estadisticas '+url_post)
+            write_json(new_data, 'telegram_request.json')
+            barra_progreso(numAzar(18,23),'Procesando datos',chat_id, mid)
+            post_response = requests.post(url_post, json=new_data)
+            # Print the response
+            post_response_json = post_response.json()
+            # print(post_response_json)
+            colores = colorRandom()
+            barra_progreso(numAzar(75,95),'Entregando resultados',chat_id, mid)
+            if (post_response_json['respuesta'] == 'Ok'):
+                enviarGrafico(msg, post_response_json['hoy'],'hoy','Interacciones del Bot (Hoy)',colores)
+                enviarGrafico(msg, post_response_json['ayer'],'ayer','Interacciones del Bot (Ayer)',colores)
+                enviarGrafico(msg, post_response_json['d7'],'d7','Interacciones del Bot (Ultimos 7 dias)',colores)
+                enviarGrafico(msg, post_response_json['d30'],'d30','Interacciones del Bot (Ultimos 30 dias)',colores)
+            else:
+                cuento = 'Lo siento... \n\n\nHubo un error para la funcion de estadisticas'
+            barra_progreso(100,'terminado',chat_id, mid)
+
+            # bitacora('respuesta api '+url_post)
+            # write_json(post_response, 'telegram_request.json')
+            bitacora('sali estadisticas')
+            # return post_response_json
+            # except Exception as error:
+            #     print('error en estadisticas',error)
+            #     bitacora('error en estadisticas')
+            #     return {
+            #         "respuesta": "NoOk"
+            #     }
+            # cuento = 'estoy en estadisticas'
+        else:
+            cuento = 'Lo siento... \n\n\nNo se encuentra en la lista de administradores o autorizados para esta funcion'
+            bot.send_message(chat_id, cuento, parse_mode='html')
+    except Exception as error:
+        bot.send_message(chat_id, 'error procesando estadisticas', parse_mode='html')
+        bitacora('error estadisticas')
 
 
 
@@ -1593,11 +1741,20 @@ def cargar_administradores():
         ADMINISTRADORES.append(x)
     return ADMINISTRADORES
 
+def cargar_autorizados():
+    bitacora(os.getenv('LIST_AUTORIZADOS'))
+    lista = (os.getenv('LIST_AUTORIZADOS').split(','))
+    for x in lista:
+        AUTORIZADOS.append(x)
+    return AUTORIZADOS
+
 def usuarioAdministrador(chat_id):
     ADMINISTRADORES = cargar_administradores()
-    # bitacora((chat_id), ADMINISTRADORES)
-    # bitacora('Verdad ' if str(chat_id) in ADMINISTRADORES else 'Falso')
     return str(chat_id) in ADMINISTRADORES
+
+def usuarioAutorizado(chat_id):
+    AUTORIZADOS = cargar_administradores()
+    return str(chat_id) in AUTORIZADOS
 
 def enviarMsgMasivo(msg):
     chat_id=obtener_chat_id(msg)

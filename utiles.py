@@ -5,6 +5,8 @@ import os
 import sys
 import json
 
+import datos as d
+
 # from dotenv import load_dotenv
 # import telebot 
 # from telebot.types import ReplyKeyboardMarkup, ForceReply, ReplyKeyboardRemove
@@ -89,6 +91,22 @@ def obtener_chat_text(msg):
     except Exception as error:
         utiles.bitacora('error chat_text')
 
+def obtener_chat_foto(msg):
+    maximo = (1024*5)*1024
+    print('entrando en obtener_chat_foto')
+    foto = msg["message"]["photo"]
+    # print(foto)
+    foto_resultado = ''
+    foto_buena = False 
+    for lafoto in foto:
+        # print(lafoto['file_id'])
+        if int(lafoto['file_size']) < maximo:
+            foto_resultado = lafoto
+            foto_buena = True
+
+    print('saliendo en obtener_chat_foto')
+    return foto_resultado, foto_buena
+
 def evaluar_comandos(msg, txt, arreglo_botones):
     if (len(arreglo_botones)) == 0:
         bot.send_message(obtener_chat_id(msg), 'No se han podido definir los botones para ofrecerle informacion, se enviara al inicio para indicar sus datos nuevamente ')
@@ -126,44 +144,54 @@ def clave_en_lista(msg, buscar):
 
 def parse_message(message):
     bitacora('entre parse_message ')
-    try:
-        chat_id = message['message']['chat']['id']
-        comando = respuesta = mensaje = False
-        if ('text' in message['message']):
-            txt = message['message']['text']
-            txt = txt.lower()
+    # try:
+    chat_id = message['message']['chat']['id']
+    comando = respuesta = mensaje = False
+    if ('text' in message['message']):
+        txt = message['message']['text']
+        txt = txt.lower()
 
-            if (clave_en_lista(message['message'],'entities')):
-                if (clave_en_lista(message['message']['entities'][0],'type')):
-                    # if (clave_en_lista(message['message']['entities'][0]['type'],'bot_command')):
-                    comando = True
-                    txt = txt.strip()
-                    if txt and (txt.startswith('/')):
-                        tamano = len(txt)
-                        txt = txt[1:tamano]
-                    print ('es un comando ')
+        if (clave_en_lista(message['message'],'entities')):
+            if (clave_en_lista(message['message']['entities'][0],'type')):
+                # if (clave_en_lista(message['message']['entities'][0]['type'],'bot_command')):
+                comando = True
+                txt = txt.strip()
+                if txt and (txt.startswith('/')):
+                    tamano = len(txt)
+                    txt = txt[1:tamano]
+                print ('es un comando ')
+        else:
+            if (clave_en_lista(message['message'],'reply_to_message')):
+                print('es una respuesta')
+                respuesta = True
             else:
-                if (clave_en_lista(message['message'],'reply_to_message')):
-                    print('es una respuesta')
-                    respuesta = True
-                else:
-                    mensaje = True
-                    print('mensaje normal')
+                mensaje = True
+                print('mensaje normal')
 
-            print ('resultado comando ',comando, 'respuesta ', respuesta, ' mensaje ',mensaje)
-            bitacora('sali parse_message ')
-            return chat_id, txt, comando,respuesta, mensaje 
-        elif ('photo' in message['message']):
+        print ('resultado comando ',comando, 'respuesta ', respuesta, ' mensaje ',mensaje)
+        bitacora('sali parse_message ')
+        return chat_id, txt, comando,respuesta, mensaje 
+    elif ('photo' in message['message']):
+        if (clave_en_lista(message['message'],'reply_to_message')):
+            pregunta_hecha = d.obtener_pregunta_hecha(message)
+            if (pregunta_hecha.lower() == 'mensaje a enviar') :
+                txt = 'enviarMsgMasivo'
+                comando = True
+                # if (clave_en_lista(message['message'],'photo')):
+                #     enviarMsgMasivo(message, 'photo')
+                # else:
+                #     enviarMsgMasivo(message, 'texto')
+        else:
             comando = True
             mensaje = False
             txt = 'procesar_imagen' 
             print('recibi una imagen')
 
-        print('sali de parse_message')
-        return chat_id, txt, comando,respuesta, mensaje 
-    except Exception as error:
-        bitacora('error parse_message')
-        return False, False, False
+    print('sali de parse_message')
+    return chat_id, txt, comando,respuesta, mensaje 
+    # except Exception as error:
+    #     bitacora('error parse_message')
+    #     return False, False, False
 
 def write_json(data, file_name='response.json'):
     try:

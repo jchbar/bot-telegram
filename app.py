@@ -34,8 +34,6 @@ pip install matplotlib
 '''
 
 
-
-
 from flask import Flask, jsonify, make_response, request, Response
 # from pyngrok import ngrok, conf
 # from telegramapi import TelegramApi
@@ -233,15 +231,6 @@ version_bot = __version__
 # no sacar estas funciones de este modulo
 '''
 
-
-def eliminar_msg(chat_id, id_msg):
-    u.bitacora('entre eliminar_msg ')
-    try:
-        bot.delete_message(chat_id, id_msg)
-    except Exception as error:
-        print('no pude eliminar_msg',chat_id,id_msg,error)
-    u.bitacora('sali eliminar_msg ')
-
 def cursor_arriba(n=1):
     print(f'\33[{n}A',end='')
 
@@ -282,7 +271,7 @@ def barra_progreso(porcentaje, texto="", cid=None, mid=None, terminal=False):
                 elif porcentaje == 100:
                     bot.edit_message_text('Cerrando conexion', cid, mid, parse_mode='html')
                     time.sleep(1)
-                    eliminar_msg(cid, mid)
+                    d.eliminar_msg(cid, mid, bot)
                     return
     except Exception as error:
         u.bitacora('error en barra_progreso')
@@ -499,7 +488,7 @@ def saldoprestamos(msg):
             # su.endChatAction(cid,'texto')
             try:
                 for prestamo in afectan:
-                    print(prestamo)
+                    # print(prestamo)
                     van = van + 1
                     saldo = float(prestamo['saldo'])
                     saldo = "{:,.3f}".format(saldo)
@@ -580,7 +569,8 @@ def administrador(msg):
         msg = bot.send_message(chat_id, cuento, parse_mode='html')
         # msg = bot.send_message(chat_id, cuento, reply_markup=botones, parse_mode='html')
     else: 
-        msg = bot.send_message(chat_id, 'No tiene permiso para esta opcion', parse_mode='html')
+        sj.noAdministrador(bot, RUTA_APP + '/', chat_id)
+        # msg = bot.send_message(chat_id, 'No tiene permiso para esta opcion', parse_mode='html')
 
 def enviarGrafico(msg, datos, archivo='hoy',uso='Uso de hoy', colores=u.colorRandom()):
     chat_id=u.obtener_chat_id(msg)
@@ -657,13 +647,12 @@ def estadisticas(msg):
             #     }
             # cuento = 'estoy en estadisticas'
         else:
-            cuento = 'Lo siento... \n\n\nNo se encuentra en la lista de administradores o autorizados para esta funcion'
-            bot.send_message(chat_id, cuento, parse_mode='html')
+            sj.noAdministrador(bot, RUTA_APP + '/', chat_id)
+            # cuento = 'Lo siento... \n\n\nNo se encuentra en la lista de administradores o autorizados para esta funcion'
+            # bot.send_message(chat_id, cuento, parse_mode='html')
     except Exception as error:
         bot.send_message(chat_id, 'error procesando estadisticas', parse_mode='html')
         u.bitacora('error estadisticas')
-
-
 
 def datospruebas(msg):
     chat_id=u.obtener_chat_id(msg)
@@ -672,10 +661,10 @@ def datospruebas(msg):
     if sj.usuarioAdministrador(chat_id):
         for version in datos_pruebas:
             cuento += version['cedula'] +' ' + version['codigo']+' =>' + version['nota']+'\n'
+        bot.send_message(chat_id, cuento, parse_mode='html')
     else:
-        cuento = 'Lo siento... \n\n\nNo se encuentra en la lista de administradores para esta funcion'
-    bot.send_message(chat_id, cuento, parse_mode='html')
-
+        # cuento = 'Lo siento... \n\n\nNo se encuentra en la lista de administradores para esta funcion'
+        sj.noAdministrador(bot, RUTA_APP + '/', chat_id)
 
 def versiones(msg):
     chat_id=u.obtener_chat_id(msg)
@@ -834,14 +823,14 @@ def confirmar_datos(message):
             id_msg_cod = datos_consulta['id_msg_codigo']
             if (codigo == '') or (cedula == ''):
                 bot.send_message(chat_id, 'Lo siento... \nAlgo malo ha ocurrido con los datos, <b>revise sus datos e intente nuevamente</b>',parse_mode='html')
-                eliminar_msg(chat_id, id_msg_ced)
-                eliminar_msg(chat_id, id_msg_cod)
+                d.eliminar_msg(chat_id, id_msg_ced, bot)
+                d.eliminar_msg(chat_id, id_msg_cod, bot)
             else:
                 codigo = texto
                 respuesta, resultado, mid = consultarDatos(message, chat_id, 0)
                 print('respues en confirmar_datos ',respuesta, resultado)
                 if respuesta == 'Ok':
-                    eliminar_msg(chat_id, mid)
+                    d.eliminar_msg(chat_id, mid, bot)
                     # print('prestamos ',float(resultado['afectan']['saldo'])+float(resultado['noafectan']['saldo']))
                     # print('pediente ',float(resultado['tsuspension']))
                     datos_consulta['saldoPrestamo']=float(resultado['afectan']['saldo'])+float(resultado['noafectan']['saldo'])
@@ -857,7 +846,7 @@ def confirmar_datos(message):
                         reply_markup=markup)
                     identificarme(message)
                     if (mid != 0):
-                        eliminar_msg(chat_id, mid)
+                        d.eliminar_msg(chat_id, mid, bot)
     except Exception as error:
         print('error en confirmar_datos',error)
         bot.send_message(chat_id, 'Lo siento... \nAlgo malo ha ocurrido con los datos, <b>revise sus datos e intente nuevamente</b>',parse_mode='html')
@@ -954,22 +943,6 @@ def disponibilidad(msg):
     sj.sendChatAction(chat_id,'texto')
     responder_disponibilidad(msg)
     u.bitacora('sali disponibilidad ')
-def obtener_chat_foto(msg):
-    maximo = (1024*5)*1024
-    print('entrando en obtener_chat_foto')
-    foto = msg["message"]["photo"]
-    # print(foto)
-    foto_resultado = ''
-    foto_buena = False 
-    for lafoto in foto:
-        # print(lafoto['file_id'])
-        if int(lafoto['file_size']) < maximo:
-            foto_resultado = lafoto
-            foto_buena = True
-
-    print('saliendo en obtener_chat_foto')
-    return foto_resultado, foto_buena
-
 
 def saldoPendiente(saldo=0):
     if (float(saldo) > 0):
@@ -978,7 +951,6 @@ def saldoPendiente(saldo=0):
         return '\n<b>Tiene un saldo pendiente de '+tsuspension+'</b>\n\n'
     else:
         return '\n'
-
 
 def responder_disponibilidad(msg):
     cid = u.obtener_chat_id(msg)
@@ -1039,8 +1011,9 @@ def responderbien(msg):
         datos_consulta['codigo']='00914'
         responder_disponibilidad(msg)
     else:
-        cuento = 'Lo siento... \n\n\nNo se encuentra en la lista de administradores para esta funcion'
-        bot.send_message(chat_id, cuento, parse_mode='html')
+        sj.noAdministrador(bot, RUTA_APP + '/', cid)
+        # cuento = 'Lo siento... \n\n\nNo se encuentra en la lista de administradores para esta funcion'
+        # bot.send_message(chat_id, cuento, parse_mode='html')
 
 
 def respondermal(msg):
@@ -1050,8 +1023,9 @@ def respondermal(msg):
         datos_consulta['codigo']='00914'
         responder_disponibilidad(msg)
     else:
-        cuento = 'Lo siento... \n\n\nNo se encuentra en la lista de administradores para esta funcion'
-        bot.send_message(chat_id, cuento, parse_mode='html')
+        sj.noAdministrador(bot, RUTA_APP + '/', cid)
+        # cuento = 'Lo siento... \n\n\nNo se encuentra en la lista de administradores para esta funcion'
+        # bot.send_message(chat_id, cuento, parse_mode='html')
 
 def identificarme(msg):
     chat_id=u.obtener_chat_id(msg)
@@ -1212,23 +1186,145 @@ def procesar_imagen(msg):
         print('no pude procesar_imagen',chat_id,error)
     u.bitacora('sali procesar_imagen')
 
+'''
+{
+    'update_id': 99201948, 
+    'message': 
+    {'message_id': 6623, 
+    'from': 
+        {
+            'id': 1691755707, 
+            'is_bot': False, 
+            'first_name': 'Juan Càrlos', 
+            'last_name': 'Hernández Bærãzårtę', 
+            'language_code': 'es'
+        }, 
+        'chat': 
+            {'id': 1691755707, 
+            'first_name': 'Juan Càrlos', 
+            'last_name': 'Hernández Bærãzårtę', 
+            'type': 'private'
+        }, 
+        'date': 1717186026, 
+        'reply_to_message': 
+        {
+            'message_id': 6622, 
+            'from': 
+            {
+                'id': 6379635079, 
+                'is_bot': True, 
+                'first_name': 'Bot para pruebas diversas', 
+                'username': 'pruebas_varias_bot'
+            }, 
+            'chat': {'id': 1691755707, 'first_name': 'Juan Càrlos', 'last_name': 'Hernández Bærãzårtę', 'type': 'private'}, 
+            'date': 1717186021, 
+            'text': 'Mensaje a enviar'
+        }, 
+        'text': 'qqqqqqqqqqqqqqqqqqqqq'
+    }
+}
+'''
+
 def enviarMsgMasivo(msg):
     chat_id=u.obtener_chat_id(msg)
-    if sj.usuarioAdministrador(chat_id):
-        sj.sendChatAction(chat_id,'texto')
-        respuesta = bot.send_message(
-            chat_id, 
-            msg,
-            parse_mode='html')
+    tipo = 'texto'
 
+    if sj.usuarioAdministrador(chat_id):
+        if (u.clave_en_lista(msg['message'],'reply_to_message')):
+            print(1)
+            if (u.clave_en_lista(msg['message'],'photo')):
+                print('foto')
+                tipo = 'photo'
+            elif (u.clave_en_lista(msg['message'],'audio')):
+                print('audio')
+                tipo = 'audio'
+            elif (u.clave_en_lista(msg['message'],'text')):
+                print('texto')
+                msgEnviar = msg['message']['text']
+            else:
+                msgEnviar = 'no definido'
+            # print('msgEnviar' , msgEnviar)
+            # sj.sendChatAction(chat_id,'texto')
+            # respuesta = bot.send_message(
+            #     chat_id,
+            #     msgEnviar, 
+            #     parse_mode='html')
+            
+            mid = barra_progreso(0,'Estableciendo conexion',chat_id)
+            new_data = {
+                "msg":"nada"
+            }
+            url_post = URL_API+'envioMasivo'
+            # print(url_post, new_data)
+            u.bitacora('voy a envioMasivo '+url_post)
+            u.write_json(new_data, 'telegram_request.json')
+            barra_progreso(u.numAzar(18,23),'Procesando datos',chat_id, mid)
+            post_response = requests.post(url_post, json=new_data)
+            # , proxies = sj.dirProxy())
+            # Print the response
+            post_response_json = post_response.json()
+            # print(post_response_json)
+            colores = u.colorRandom()
+            barra_progreso(u.numAzar(75,95),'Entregando resultados',chat_id, mid)
+            barra_progreso(u.numAzar(100),'Finalizado',chat_id, mid)
+            if (tipo == 'photo'):
+                chat_id=u.obtener_chat_id(msg)
+                foto, resultado = u.obtener_chat_foto(msg)
+                link = bot.get_file(foto['file_id'])
+                downloaded_file = bot.download_file(link.file_path)
+                filename = str(chat_id)+'.jpg'
+                with open(filename, 'wb') as new_file:
+                    new_file.write(downloaded_file)
+                    time.sleep(1)
+                new_file.close()
+                diractual = RUTA_APP + '/'
+                foto = open(diractual+'/'+filename, 'rb')
+                uso = msg["message"]["caption"]
+                print('uso ', uso)
+
+            if (post_response_json['respuesta'] == 'Ok'):
+                datos = post_response_json['datos']
+                mid = barra_progreso(0,'Iniciando envio',chat_id)
+                todos = len(datos)
+                x = 0
+                for i in datos:
+                    x=x+1
+                    progreso = (x * 100) // todos
+                    print(progreso)
+
+                    barra_progreso(progreso,'Enviando '+str(x)+ ' de '+str(todos),chat_id, mid)
+                    if (tipo == 'texto'):
+                        cuento = 'Estimado(a): \n<i>'+i['nombre']+'</i>\n\n'
+                        cuento += msgEnviar +'\n\n'
+                        cuento += 'Este mensaje lo ha recibido por su interaccion con el Bot'
+                        bot.send_message(i['chat_id'], cuento, parse_mode='html')
+                    elif (tipo == 'photo'):
+                        cuento = 'Estimado(a): \n<i>'+i['nombre']+'</i>\n\n'
+                        cuento += uso +'\n\n'
+                        cuento += 'Este mensaje lo ha recibido por su interaccion con el Bot'
+                        filename = str(chat_id)+'.jpg'
+                        with open(filename, 'wb') as new_file:
+                            new_file.write(downloaded_file)
+                            time.sleep(1)
+                        new_file.close()
+                        foto = open(diractual+'/'+filename, 'rb')
+                        bot.send_photo(i['chat_id'], foto, uso)
+                        time.sleep(0.5)
+                if (tipo == 'photo'):
+                    os.remove(diractual+'/'+filename)
+                barra_progreso(u.numAzar(100),'Finalizado',chat_id, mid)
+            else:
+                bot.send_message(chat_id, '<i>'+post_response_json['mensaje']+'</i>', parse_mode='html')
+    else:
+        sj.noAdministrador(bot, RUTA_APP + '/', chat_id)
 
 def mensajemasivo(msg):
     u.bitacora('entre mensajeUsuarios')
     try:
         chat_id=u.obtener_chat_id(msg)
         if sj.usuarioAdministrador(chat_id):
-            bot.send_message(chat_id, 'es un administrador')
-            sj.sendChatAction(chat_id,'texto')
+            # bot.send_message(chat_id, 'es un administrador')
+            # sj.sendChatAction(chat_id,'texto')
             botones = ReplyKeyboardRemove()
             # global txt_pregunta_cedula = textoAlAzar(txt_pregunta_cedula)
             # global txt_pregunta_codigo = textoAlAzar(txt_pregunta_codigo)
@@ -1238,13 +1334,15 @@ def mensajemasivo(msg):
                 chat_id, 
                 'Mensaje a enviar',reply_markup = markup, 
                 parse_mode='html')
-            print(respuesta)
+            # print(respuesta)
             bot.register_next_step_handler(respuesta, enviarMsgMasivo)
         else:
-            bot.send_message(chat_id, 'no es un administrador')
+            sj.noAdministrador(bot, RUTA_APP + '/', chat_id)
+            # bot.send_message(chat_id, 'no es un administrador')
+        u.bitacora('sali mensajeUsuarios')
     except Exception as error:
         print('no pude mensajeUsuarios',chat_id,error)
-    u.bitacora('sali mensajeUsuarios')
+        u.bitacora('no pude mensajeUsuarios '+str(chat_id))
 
 # def reiniciar(msg):
 #     try:
@@ -1325,9 +1423,7 @@ def index():
             if es_commando: #(existe_comando(txt)):
                 if (txt == 'start'):
                     txt = 'iniciar'
-                u.bitacora('i1')
                 bot.send_message(chat_id, 'Seleccionaste <i>'+txt+'</i>', parse_mode='html')
-                u.bitacora('i2')
                 # getattr(self, txt)()
                 # globals()[disponibilidad]
                 try:

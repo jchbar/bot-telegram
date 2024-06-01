@@ -46,3 +46,12 @@ def obtener_pregunta_hecha(msg):
     except Exception as error:
         u.bitacora('error obtener_pregunta_hecha')
 
+def eliminar_msg(chat_id, id_msg, bot):
+    u.bitacora('entre eliminar_msg ')
+    try:
+        bot.delete_message(chat_id, id_msg)
+        u.bitacora('sali eliminar_msg ')
+    except Exception as error:
+        print('no pude eliminar_msg',chat_id,id_msg,error)
+        u.bitacora('no pude eliminar_msg '+str(chat_id + ' ' +str(id_msg)))
+

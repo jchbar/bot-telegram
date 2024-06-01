@@ -197,7 +197,7 @@ def registrar_peticion(msg):
         }
 
 def cargar_administradores():
-    u.bitacora(os.getenv("LIST_ADMIN"))
+    # u.bitacora(os.getenv("LIST_ADMIN"))
     lista = (os.getenv("LIST_ADMIN").split(","))
     ADMINISTRADORES = []
     for x in lista:
@@ -205,7 +205,7 @@ def cargar_administradores():
     return ADMINISTRADORES
 
 def cargar_autorizados():
-    u.bitacora(os.getenv("LIST_AUTORIZADOS"))
+    # u.bitacora(os.getenv("LIST_AUTORIZADOS"))
     lista = (os.getenv("LIST_AUTORIZADOS").split(","))
     AUTORIZADOS = []
     for x in lista:
@@ -219,6 +219,11 @@ def usuarioAdministrador(chat_id):
 def usuarioAutorizado(chat_id):
     AUTORIZADOS = cargar_administradores()
     return str(chat_id) in AUTORIZADOS
+
+def noAdministrador(bot, diractual, chat_id):
+    sendChatAction(chat_id,'foto')
+    foto = open(diractual+'/images/'+'nodata.gif', 'rb')
+    bot.send_photo(chat_id, foto, 'No es administrador')
 
 # def dirProxy():
 #     # proxy = {
